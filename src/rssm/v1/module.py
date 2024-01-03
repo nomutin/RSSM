@@ -32,7 +32,6 @@ class RSSMV1(RSSM):
         representation_config: RepresentationConfig,
         encoder_config: EncoderConfig,
         decoder_config: DecoderConfig,
-        vae_reference: str,
     ) -> None:
         """Initialize RSSM components."""
         super().__init__()

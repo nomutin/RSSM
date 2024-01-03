@@ -21,6 +21,8 @@ Small project for RSSM pre-training.
 - [julisforest/dreamer-pytorch](https://github.com/juliusfrost/dreamer-pytorch)
 - [pytorch/rl/dreamer](https://github.com/pytorch/rl/blob/main/examples/dreamer/dreamer.py)
 
+## API
+
 ```python
 from rssm import RSSMV1
 
