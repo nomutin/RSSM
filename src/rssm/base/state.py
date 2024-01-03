@@ -50,6 +50,27 @@ class State:
         """Return the shape of the state."""
         return self.deter.shape
 
+    def squeeze(self, dim: int) -> State:
+        """Squeeze the state along the given dimension."""
+        return type(self)(
+            deter=self.deter.squeeze(dim),
+            distribution=self.distribution.squeeze(dim),
+        )
+
+    def unsqueeze(self, dim: int) -> State:
+        """Unsqueeze the state along the given dimension."""
+        return type(self)(
+            deter=self.deter.unsqueeze(dim),
+            distribution=self.distribution.unsqueeze(dim),
+        )
+
+    def detach(self) -> State:
+        """Detach the state."""
+        return type(self)(
+            deter=self.deter.detach(),
+            distribution=self.distribution.detach(),
+        )
+
 
 def stack_states(states: list[State], dim: int) -> State:
     """Stack states along the given dimension."""

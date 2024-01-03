@@ -3,21 +3,21 @@ model:
   representation_config:
     _target_: rssm.base.module.RepresentationConfig
     obs_embed_size: 128
-    hidden_size: 200
-    deterministic_size: 200
-    stochastic_size: 64
-    category_size: 8
-    class_size: 8
+    hidden_size: 600
+    deterministic_size: 600
+    stochastic_size: 256
+    category_size: 16
+    class_size: 16
     activation_name: ELU
   transition_config:
     _target_: rssm.base.module.TransitionConfig
-    hidden_size: 200
+    hidden_size: 600
     activation_name: ELU
-    deterministic_size: 200
-    stochastic_size: 64
+    deterministic_size: 600
+    stochastic_size: 256
     action_size: 1
-    category_size: 8
-    class_size: 8
+    category_size: 16
+    class_size: 16
   encoder_config:
     _target_: cnn.network.EncoderConfig
     linear_sizes:
@@ -51,7 +51,7 @@ model:
     linear_sizes:
       _target_: builtins.tuple
       _args_:
-        - [264, 512]
+        - [856, 512]
     activation_name: ELU
     out_activation_name: Sigmoid
     channels:
@@ -88,6 +88,23 @@ datamodule:
   num_workers: 4
   train_transforms:
     _target_: rssm.dataset.augmentation.Transforms
+    action_input:
+      _target_: torchvision.transforms.Compose
+      transforms:
+        -
+          _target_: rssm.dataset.augmentation.AdditiveNoise
+          std: 0.2
+        -
+          _target_: rssm.dataset.augmentation.DynamicsNoise
+    observation_input:
+      _target_: torchvision.transforms.Compose
+      transforms:
+        -
+          _target_: rssm.dataset.augmentation.AdditiveNoise
+          std: 0.2
+        -
+          _target_: rssm.dataset.augmentation.DynamicsNoise
+        
   val_transforms:
     _target_: rssm.dataset.augmentation.Transforms
 
