@@ -41,6 +41,7 @@ class RSSMV1(RSSM):
         self.encoder = Encoder(config=encoder_config)
         self.decoder = Decoder(config=decoder_config)
         self.distribution_factory = NormalFactory()
+        self.kl_factor = 0.0
 
     def initial_state(self, batch_size: int) -> State:
         """Generate initial state as zero matrix."""
@@ -49,10 +50,7 @@ class RSSMV1(RSSM):
         deter = torch.zeros([batch_size, deter_size])
         stoch = torch.zeros([batch_size, stoch_size * 2])
         distribution = self.distribution_factory.forward(stoch)
-        return State(
-            deter=deter,
-            distribution=distribution.independent(dim=1),
-        ).to(self.device)
+        return State(deter=deter, distribution=distribution).to(self.device)
 
     def encode(self, observation: Tensor) -> Tensor:
         """Encode observation."""
@@ -117,11 +115,10 @@ class RSSMV1(RSSM):
     def _shared_step(self, batch: list[Tensor]) -> dict[str, Tensor]:
         action_input, observation_input, _, observation_target = batch
         batch_size = action_input.shape[0]
-        initial_state = self.initial_state(batch_size=batch_size)
         posterior, prior = self.rollout_representation(
             actions=action_input,
             observations=observation_input,
-            prev_state=initial_state,
+            prev_state=self.initial_state(batch_size=batch_size),
         )
         reconstruction = self.decode(state=posterior)
         recon_loss = likelihood(
@@ -130,14 +127,16 @@ class RSSMV1(RSSM):
             event_ndims=3,
         )
         kl_div = kl_divergence(
-            q=posterior.distribution,
-            p=prior.distribution,
+            q=posterior.distribution.independent(1),
+            p=prior.distribution.independent(1),
             use_balancing=False,
-        ).div(posterior.distribution.event_shape[0])
+        ).mul(self.kl_factor)
         return {
             "loss": recon_loss + kl_div,
             "recon": recon_loss,
             "kl": kl_div,
+            "variance_max": posterior.distribution.variance.max().detach(),
+            "variance_min": posterior.distribution.variance.min().detach(),
         }
 
     def test_step(self, batch: tuple[Tensor, ...]) -> dict[str, Any]:

@@ -51,7 +51,4 @@ class RepresentationV1(Representation):
         projector_input = torch.cat([prior_state.deter, obs_embed], -1)
         stoch_source = self.rnn_to_post_projector.forward(projector_input)
         distribution = self.distribution_factory.forward(stoch_source)
-        return State(
-            deter=prior_state.deter,
-            distribution=distribution.independent(dim=1),
-        )
+        return State(deter=prior_state.deter, distribution=distribution)

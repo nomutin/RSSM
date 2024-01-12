@@ -47,8 +47,8 @@ class ActionObservationDataset(Dataset):
     def __getitem__(self, idx: int) -> tuple[Tensor, Tensor, Tensor, Tensor]:
         """Apply transforms to and return tensors."""
         idx = idx // self.seq_per_batch
-        action = self.load_action(idx)
-        observation = self.load_observation(idx)
+        action = self.transforms.action(self.load_action(idx))
+        observation = self.transforms.observation(self.load_observation(idx))
         return (
             self.transforms.action_input(action[:-1]),
             self.transforms.observation_input(observation[:-1]),

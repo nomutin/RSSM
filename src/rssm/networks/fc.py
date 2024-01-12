@@ -40,6 +40,7 @@ class MLP(nn.Module):
     def _build_model(self) -> nn.Sequential:
         seq: list[nn.Module] = [nn.Linear(self.input_size, self.hidden_size)]
         seq += [self._activation()]
+        seq += [nn.LayerNorm(self.hidden_size)]
         for _ in range(self.num_hidden_layers):
             seq += self._build_hidden_layer()
         seq += [nn.Linear(self.hidden_size, self.output_size)]
@@ -50,6 +51,7 @@ class MLP(nn.Module):
         layer: list[nn.Module] = []
         layer += [nn.Linear(self.hidden_size, self.hidden_size)]
         layer += [self._activation()]
+        layer += [nn.LayerNorm(self.hidden_size)]
         return layer
 
     def forward(self, features: Tensor) -> Tensor:

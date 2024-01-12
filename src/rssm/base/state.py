@@ -9,7 +9,7 @@ import torch
 from torch import Tensor
 
 if TYPE_CHECKING:
-    from distribution_extention import DistributionBase, Independent
+    from distribution_extention import Distribution
 
 Slice = Union[slice, int, Tuple[Union[slice, int], ...]]
 
@@ -17,7 +17,7 @@ Slice = Union[slice, int, Tuple[Union[slice, int], ...]]
 class State:
     """Abstract class for RSSM State."""
 
-    def __init__(self, deter: Tensor, distribution: Independent) -> None:
+    def __init__(self, deter: Tensor, distribution: Distribution) -> None:
         """Set parameters."""
         self.deter = deter
         self.distribution = distribution
@@ -75,30 +75,30 @@ class State:
 def stack_states(states: list[State], dim: int) -> State:
     """Stack states along the given dimension."""
     deter = torch.stack([s.deter for s in states], dim=dim)
-    dist: DistributionBase = states[0].distribution.base_dist
-    parameter_names = dist.parameters.keys()
+    dist: Distribution = states[0].distribution
+
     parameters = {}
-    for parameter_name in parameter_names:
+    for parameter_name in dist.arg_constraints.keys():
         params = [
-            getattr(state.distribution.base_dist, parameter_name)
+            getattr(state.distribution, parameter_name)
             for state in states
         ]
         parameters[parameter_name] = torch.stack(params, dim=dim)
-    distribution = dist.__class__(**parameters).independent(dim=1)
+    distribution = dist.__class__(**parameters)
     return State(deter=deter, distribution=distribution)
 
 
 def cat_states(states: list[State], dim: int) -> State:
     """Concatenate states along the given dimension."""
     deter = torch.cat([s.deter for s in states], dim=dim)
-    dist: DistributionBase = states[0].distribution.base_dist
+    dist: Distribution = states[0].distribution
     parameter_names = dist.parameters.keys()
     parameters = {}
     for parameter_name in parameter_names:
         params = [
-            getattr(state.distribution.base_dist, parameter_name)
+            getattr(state.distribution, parameter_name)
             for state in states
         ]
         parameters[parameter_name] = torch.cat(params, dim=dim)
-    distribution = dist.__class__(**parameters).independent(dim=1)
+    distribution = dist.__class__(**parameters)
     return State(deter=deter, distribution=distribution)
