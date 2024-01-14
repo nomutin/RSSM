@@ -16,6 +16,7 @@ empty_compose = Compose([])
 @dataclass
 class Transforms:
     """Transforms for `PlayDataset` ."""
+
     action: Compose = empty_compose
     observation: Compose = empty_compose
     action_input: Compose = empty_compose

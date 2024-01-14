@@ -1,18 +1,22 @@
+deterministic_size: 200
+stochastic_size: 30
+activation_name: ELU
+
 model:
   _target_: rssm.v1.module.RSSMV1
   representation_config:
     _target_: rssm.base.module.RepresentationConfig
-    obs_embed_size: 128
-    hidden_size: 200
-    deterministic_size: 200
-    stochastic_size: 30
-    activation_name: ELU
+    obs_embed_size: 4096
+    hidden_size: ${deterministic_size}
+    deterministic_size: ${deterministic_size}
+    stochastic_size: ${stochastic_size}
+    activation_name: ${activation_name}
   transition_config:
     _target_: rssm.base.module.TransitionConfig
-    hidden_size: 200
-    activation_name: ELU
-    deterministic_size: 200
-    stochastic_size: 30
+    hidden_size: ${deterministic_size}
+    activation_name: ${activation_name}
+    deterministic_size: ${deterministic_size}
+    stochastic_size: ${stochastic_size}
     action_size: 1
   encoder_config:
     _target_: cnn.network.EncoderConfig
@@ -20,7 +24,7 @@ model:
       _target_: builtins.tuple
       _args_:
         - [512, 128]
-    activation_name: ELU
+    activation_name: ${activation_name}
     out_activation_name: Identity
     channels:
       _target_: builtins.tuple
@@ -47,8 +51,8 @@ model:
     linear_sizes:
       _target_: builtins.tuple
       _args_:
-        - [230, 512]
-    activation_name: ELU
+        - [230,]
+    activation_name: ${activation_name}
     out_activation_name: Sigmoid
     channels:
       _target_: builtins.tuple
@@ -79,25 +83,11 @@ model:
 datamodule:
   _target_: rssm.dataset.datamodule.ActionObservationDataModule
   data_name: pinpad
-  batch_size: 32
+  batch_size: 64
   seq_per_batch: 1
   num_workers: 4
   train_transforms:
     _target_: rssm.dataset.augmentation.Transforms
-    action:
-      _target_: torchvision.transforms.Compose
-      transforms:
-        -
-          _target_: rssm.dataset.augmentation.RandomWindow
-          lower_window_size: 20
-          upper_window_size: 21
-    observation:
-      _target_: torchvision.transforms.Compose
-      transforms:
-        -
-          _target_: rssm.dataset.augmentation.RandomWindow
-          lower_window_size: 20
-          upper_window_size: 21
 
     action_input:
       _target_: torchvision.transforms.Compose
@@ -107,6 +97,14 @@ datamodule:
           std: 0.2
         -
           _target_: rssm.dataset.augmentation.DynamicsNoise
+    observation_input:
+      _target_: torchvision.transforms.Compose
+      transforms:
+        -
+          _target_: rssm.dataset.augmentation.DynamicsNoise
+        -
+          _target_: rssm.dataset.augmentation.AdditiveNoise
+          std: 0.3
   val_transforms:
     _target_: rssm.dataset.augmentation.Transforms
 
@@ -114,7 +112,7 @@ trainer:
   _target_: lightning.Trainer
   accelerator: gpu
   devices:
-    - 3
+    - 2
   max_epochs: -1
   gradient_clip_val: 10
   deterministic: true
@@ -141,5 +139,3 @@ callbacks:
       - 21
       - 22
       - 23
-  -
-    _target_: rssm.v1.callback.KLAnnealingCallback

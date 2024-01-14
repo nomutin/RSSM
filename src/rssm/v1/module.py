@@ -41,7 +41,7 @@ class RSSMV1(RSSM):
         self.encoder = Encoder(config=encoder_config)
         self.decoder = Decoder(config=decoder_config)
         self.distribution_factory = NormalFactory()
-        self.kl_factor = 0.0
+        self.kl_factor = 0.1
 
     def initial_state(self, batch_size: int) -> State:
         """Generate initial state as zero matrix."""

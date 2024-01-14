@@ -78,11 +78,8 @@ def stack_states(states: list[State], dim: int) -> State:
     dist: Distribution = states[0].distribution
 
     parameters = {}
-    for parameter_name in dist.arg_constraints.keys():
-        params = [
-            getattr(state.distribution, parameter_name)
-            for state in states
-        ]
+    for parameter_name in dist.arg_constraints:
+        params = [getattr(s.distribution, parameter_name) for s in states]
         parameters[parameter_name] = torch.stack(params, dim=dim)
     distribution = dist.__class__(**parameters)
     return State(deter=deter, distribution=distribution)
@@ -95,10 +92,7 @@ def cat_states(states: list[State], dim: int) -> State:
     parameter_names = dist.parameters.keys()
     parameters = {}
     for parameter_name in parameter_names:
-        params = [
-            getattr(state.distribution, parameter_name)
-            for state in states
-        ]
+        params = [getattr(s.distribution, parameter_name) for s in states]
         parameters[parameter_name] = torch.cat(params, dim=dim)
     distribution = dist.__class__(**parameters)
     return State(deter=deter, distribution=distribution)

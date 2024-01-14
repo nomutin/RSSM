@@ -16,5 +16,5 @@ def likelihood(
 
 
 def mse(prediction: Tensor, target: Tensor, factor: float = 1.0) -> Tensor:
-    """Computes the mean squared error."""
+    """Compute mean squared error."""
     return nn.MSELoss()(prediction, target).mean().mul(factor)
