@@ -1,6 +1,6 @@
 [project]
 name = "rssm"
-version = "0.0.1"
+version = "0.0.2"
 description = "Reccurent State Space Model"
 dependencies = [
     "einops>=0.7.0",
@@ -80,12 +80,13 @@ warn_return_any = false              # `Any`型を返す関数やメソッドに
 [tool.ruff]
 select = ["ALL"]
 ignore = [
-    "D203",  # one-blank-line-before-class
-    "D212",  # multi-line-summary-first-line
-    "S101", # Use of assert detected
-    "ANN",  # Missing type annotation for `self` or `cls`
-    "PGH003", # Use specific rule codes when ignoring type issues
-    "I",  # isort
+    "D203",    # one-blank-line-before-class
+    "D212",    # multi-line-summary-first-line
+    "S101",    # Use of assert detected
+    "ANN101",  # Missing type annotation for self in method
+    "ANN102",  # Missing type annotation for cls in classmethod
+    "PGH003",  # Use specific rule codes when ignoring type issues
+    "I001",    # Import block is un-sorted or un-formatted
 ]
 fixable = ["ALL"]
 unfixable = []

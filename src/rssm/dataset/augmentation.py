@@ -17,6 +17,8 @@ empty_compose = Compose([])
 class Transforms:
     """Transforms for `PlayDataset` ."""
 
+    action: Compose = empty_compose
+    observation: Compose = empty_compose
     action_input: Compose = empty_compose
     observation_input: Compose = empty_compose
 
@@ -83,3 +85,26 @@ class DynamicsNoise:
         eps_tensor = torch.from_numpy(eps_array).float()
         shift = torch.cat([data[1:].clone(), data[-1:].clone()], dim=0)
         return (eps_tensor * data + (1 - eps_tensor) * shift).to(data.device)
+
+
+class RandomWindow:
+    """Randomly select a window of sequence."""
+
+    def __init__(self, lower_window_size: int, upper_window_size: int) -> None:
+        """Initialize parameters."""
+        self.lower = lower_window_size
+        self.upper = upper_window_size
+        self.randgen1 = Generator(MT19937(42))
+        self.randgen2 = Generator(MT19937(42))
+        self._update_window_size()
+
+    def _update_window_size(self) -> None:
+        """Update window size with `randgen1` ."""
+        self.window_size = self.randgen1.integers(self.lower, self.upper)
+
+    def __call__(self, data: Tensor) -> Tensor:
+        """Select start idx with `randgen2` and slice data."""
+        self._update_window_size()
+        seq_len = data.shape[0]
+        start_idx = self.randgen2.integers(0, seq_len - self.window_size)
+        return data[start_idx : start_idx + self.window_size]

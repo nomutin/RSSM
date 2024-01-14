@@ -54,10 +54,7 @@ class RSSMV2(RSSM):
         deter = torch.zeros([batch_size, deter_size])
         stoch = torch.zeros([batch_size, stoch_size])
         distribution = self.distribution_factory.forward(stoch)
-        return State(
-            deter=deter,
-            distribution=distribution.independent(dim=1),
-        ).to(self.device)
+        return State(deter=deter, distribution=distribution).to(self.device)
 
     def encode(self, observation: Tensor) -> Tensor:
         """Encode observation."""

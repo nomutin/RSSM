@@ -69,7 +69,4 @@ class TransitionV2(Transition):
         deter = self.rnn_cell.forward(action_state, hx=prev_state.deter)
         stoch_source = self.rnn_to_prior_projector(deter)
         distribution = self.distribution_factory.forward(stoch_source)
-        return State(
-            deter=deter,
-            distribution=distribution.independent(dim=1),
-        )
+        return State(deter=deter, distribution=distribution)
