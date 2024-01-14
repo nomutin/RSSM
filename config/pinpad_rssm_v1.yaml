@@ -23,7 +23,7 @@ model:
     linear_sizes:
       _target_: builtins.tuple
       _args_:
-        - [512, 128]
+        - [0,]
     activation_name: ${activation_name}
     out_activation_name: Identity
     channels:
