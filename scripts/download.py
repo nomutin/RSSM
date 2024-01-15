@@ -1,4 +1,4 @@
-"""Download robot data from Google Drive."""
+"""Download data from Google Drive."""
 
 from __future__ import annotations
 
