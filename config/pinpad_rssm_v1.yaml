@@ -88,18 +88,32 @@ datamodule:
   num_workers: 4
   train_transforms:
     _target_: rssm.dataset.augmentation.Transforms
-    # action_input:
-    #   _target_: torchvision.transforms.Compose
-    #   transforms:
-    #     -
-    #       _target_: rssm.dataset.augmentation.AdditiveNoise
-    #       std: 0.1
-    # observation_input:
-    #   _target_: torchvision.transforms.Compose
-    #   transforms:
-    #     -
-    #       _target_: rssm.dataset.augmentation.AdditiveNoise
-    #       std: 0.2
+    action:
+      _target_: torchvision.transforms.Compose
+      transforms:
+        - 
+          _target_: rssm.dataset.augmentation.RandomWindow
+          lower_window_size: 20
+          upper_window_size: 21
+    observation:
+      _target_: torchvision.transforms.Compose
+      transforms:
+        -
+          _target_: rssm.dataset.augmentation.RandomWindow
+          lower_window_size: 20
+          upper_window_size: 21
+    action_input:
+      _target_: torchvision.transforms.Compose
+      transforms:
+        -
+          _target_: rssm.dataset.augmentation.AdditiveNoise
+          std: 0.2
+    observation_input:
+      _target_: torchvision.transforms.Compose
+      transforms:
+        -
+          _target_: rssm.dataset.augmentation.AdditiveNoise
+          std: 0.2
   val_transforms:
     _target_: rssm.dataset.augmentation.Transforms
 
@@ -107,7 +121,7 @@ trainer:
   _target_: lightning.Trainer
   accelerator: gpu
   devices:
-    - 3
+    - 2
   max_epochs: -1
   gradient_clip_val: 10
   deterministic: true
