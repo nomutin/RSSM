@@ -3,12 +3,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any
 
 import torch
 from numpy.random import MT19937, Generator
 from torch import Tensor
-from torchvision import transforms
 from torchvision.transforms import Compose
 
 empty_compose = Compose([])
@@ -89,15 +87,3 @@ class RandomWindow:
         seq_len = data.shape[0]
         start_idx = self.randgen2.integers(0, seq_len - self.window_size)
         return data[start_idx : start_idx + self.window_size]
-
-
-class TorchvisionTransform:
-    """Apply `torchvision` transform to movie."""
-
-    def __init__(self, transform_name: str, **params: Any) -> None:
-        """Initialize parameters."""
-        self.transform = getattr(transforms, transform_name)(**params)
-
-    def __call__(self, movie: Tensor) -> Tensor:
-        """Apply transform to movie."""
-        return torch.stack([self.transform(image) for image in movie])
