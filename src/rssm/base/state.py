@@ -75,24 +75,20 @@ class State:
 def stack_states(states: list[State], dim: int) -> State:
     """Stack states along the given dimension."""
     deter = torch.stack([s.deter for s in states], dim=dim)
-    dist: Distribution = states[0].distribution
-
     parameters = {}
-    for parameter_name in dist.arg_constraints:
+    for parameter_name in states[0].distribution.parameters:
         params = [getattr(s.distribution, parameter_name) for s in states]
         parameters[parameter_name] = torch.stack(params, dim=dim)
-    distribution = dist.__class__(**parameters)
+    distribution = states[0].distribution.__class__(**parameters)
     return State(deter=deter, distribution=distribution)
 
 
 def cat_states(states: list[State], dim: int) -> State:
     """Concatenate states along the given dimension."""
     deter = torch.cat([s.deter for s in states], dim=dim)
-    dist: Distribution = states[0].distribution
-    parameter_names = dist.parameters.keys()
     parameters = {}
-    for parameter_name in parameter_names:
+    for parameter_name in states[0].distribution.parameters:
         params = [getattr(s.distribution, parameter_name) for s in states]
         parameters[parameter_name] = torch.cat(params, dim=dim)
-    distribution = dist.__class__(**parameters)
+    distribution = states[0].distribution.__class__(**parameters)
     return State(deter=deter, distribution=distribution)
