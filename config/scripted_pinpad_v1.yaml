@@ -1,21 +1,15 @@
-deterministic_size: 64
-category_size: 4
-class_size: 4
-stochastic_size: ${mul:${class_size},${class_size}}
-obs_embed_size: 32
+deterministic_size: 200
+stochastic_size: 30
 activation_name: ELU
-action_size: 1
 
 model:
-  _target_: rssm.v2.module.RSSMV2
+  _target_: rssm.v1.module.RSSMV1
   representation_config:
     _target_: rssm.base.module.RepresentationConfig
     obs_embed_size: 4096
     hidden_size: ${deterministic_size}
     deterministic_size: ${deterministic_size}
     stochastic_size: ${stochastic_size}
-    category_size: ${category_size}
-    class_size: ${class_size}
     activation_name: ${activation_name}
   transition_config:
     _target_: rssm.base.module.TransitionConfig
@@ -23,9 +17,7 @@ model:
     activation_name: ${activation_name}
     deterministic_size: ${deterministic_size}
     stochastic_size: ${stochastic_size}
-    action_size: ${action_size}
-    category_size: ${category_size}
-    class_size: ${class_size}
+    action_size: 1
   encoder_config:
     _target_: cnn.network.EncoderConfig
     linear_sizes:
@@ -59,7 +51,7 @@ model:
     linear_sizes:
       _target_: builtins.tuple
       _args_:
-        - [80, 256]
+        - [230, 512]
     activation_name: ${activation_name}
     out_activation_name: Sigmoid
     channels:
@@ -86,28 +78,16 @@ model:
       _target_: builtins.tuple
       _args_:
         - [3, 64, 64]
-  
+
 
 datamodule:
   _target_: rssm.dataset.datamodule.ActionObservationDataModule
-  data_name: pinpad
+  data_name: scripted_pinpad50
   batch_size: 32
   seq_per_batch: 1
   num_workers: 4
   train_transforms:
     _target_: rssm.dataset.augmentation.Transforms
-    action_input:
-      _target_: torchvision.transforms.Compose
-      transforms:
-        -
-          _target_: rssm.dataset.augmentation.AdditiveNoise
-          std: 0.2
-    observation_input:
-      _target_: torchvision.transforms.Compose
-      transforms:
-        -
-          _target_: rssm.dataset.augmentation.AdditiveNoise
-          std: 0.2
   val_transforms:
     _target_: rssm.dataset.augmentation.Transforms
 
@@ -115,7 +95,7 @@ trainer:
   _target_: lightning.Trainer
   accelerator: gpu
   devices:
-    - 2
+    - 1
   max_epochs: -1
   gradient_clip_val: 10
   deterministic: true
@@ -131,7 +111,7 @@ callbacks:
     patience: 200
     verbose: true
   -
-    _target_: rssm.v2.callback.LogRSSMV2Output
+    _target_: rssm.v1.callback.LogRSSMV1Output
     every_n_epochs: 100
     indices:
       - 0

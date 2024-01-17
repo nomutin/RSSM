@@ -3,13 +3,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any
 
 import torch
-import torch.distributions as td
 from numpy.random import MT19937, Generator
 from torch import Tensor
-from torchvision import transforms
 from torchvision.transforms import Compose
 
 empty_compose = Compose([])
@@ -43,26 +40,6 @@ class AdditiveNoise:
         max_, min_, device = data.max(), data.min(), data.device
         noise = torch.normal(mean=0, std=self.std, size=data.shape)
         return torch.clamp(data + noise.to(device), min_, max_)
-
-
-class MultiplicativeNoise:
-    """
-    Add zero-mean Uniform noise.
-
-    References
-    ----------
-    * [S4RL](https://arxiv.org/abs/2103.06326v2)
-    """
-
-    def __init__(self, low: float = 0.8, high: float = 1.2) -> None:
-        """Initialize parameters."""
-        self.low = low
-        self.high = high
-
-    def __call__(self, data: Tensor) -> Tensor:
-        """Add noise to data."""
-        epsilon = td.Uniform(low=self.low, high=self.high).sample(data.shape)
-        return data * epsilon.to(data.device)
 
 
 class DynamicsNoise:
@@ -110,15 +87,3 @@ class RandomWindow:
         seq_len = data.shape[0]
         start_idx = self.randgen2.integers(0, seq_len - self.window_size)
         return data[start_idx : start_idx + self.window_size]
-
-
-class TorchvisionTransform:
-    """Apply `torchvision` transform to movie."""
-
-    def __init__(self, transform_name: str, **params: Any) -> None:
-        """Initialize parameters."""
-        self.transform = getattr(transforms, transform_name)(**params)
-
-    def __call__(self, movie: Tensor) -> Tensor:
-        """Apply transform to movie."""
-        return torch.stack([self.transform(image) for image in movie])

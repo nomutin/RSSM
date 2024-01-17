@@ -46,6 +46,7 @@ class RSSMV2(RSSM):
             class_size=representation_config.class_size,
             category_size=representation_config.category_size,
         )
+        self.kl_factor = 0.1
 
     def initial_state(self, batch_size: int) -> State:
         """Generate initial state as zero matrix."""
@@ -132,10 +133,10 @@ class RSSMV2(RSSM):
             event_ndims=3,
         )
         kl_div = kl_divergence(
-            q=posterior.distribution,
-            p=prior.distribution,
-            use_balancing=True,
-        ).div(posterior.distribution.event_shape[0])
+            q=posterior.distribution.independent(2),
+            p=prior.distribution.independent(2),
+            use_balancing=False,
+        ).mul(self.kl_factor)
         return {
             "loss": recon_loss + kl_div,
             "recon": recon_loss,
