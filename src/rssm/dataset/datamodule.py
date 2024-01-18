@@ -2,16 +2,25 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from pathlib import Path
-from typing import TYPE_CHECKING
 
-import lightning
-import torch
-from torch import Tensor
+from lightning import LightningDataModule
+from torch import Tensor, load
 from torch.utils.data import DataLoader, Dataset
+from torchvision.transforms import Compose
 
-if TYPE_CHECKING:
-    from .augmentation import Transforms
+empty_compose = Compose([])
+
+
+@dataclass
+class Transforms:
+    """Transforms for `PlayDataset` ."""
+
+    action: Compose = empty_compose
+    observation: Compose = empty_compose
+    action_input: Compose = empty_compose
+    observation_input: Compose = empty_compose
 
 
 class ActionObservationDataset(Dataset):
@@ -37,12 +46,12 @@ class ActionObservationDataset(Dataset):
     def load_action(self, idx: int) -> Tensor:
         """Load action data (sequence)."""
         action_path = self.path_to_data / f"action_{idx}.pt"
-        return torch.load(action_path)
+        return load(action_path)
 
     def load_observation(self, idx: int) -> Tensor:
         """Load observation data (sequence)."""
         observation_path = self.path_to_data / f"observation_{idx}.pt"
-        return torch.load(observation_path)
+        return load(observation_path)
 
     def __getitem__(self, idx: int) -> tuple[Tensor, Tensor, Tensor, Tensor]:
         """Apply transforms to and return tensors."""
@@ -57,7 +66,7 @@ class ActionObservationDataset(Dataset):
         )
 
 
-class ActionObservationDataModule(lightning.LightningDataModule):
+class ActionObservationDataModule(LightningDataModule):
     """DataModule with actions & observations."""
 
     def __init__(  # noqa: PLR0913
