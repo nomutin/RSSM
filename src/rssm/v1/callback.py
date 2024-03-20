@@ -27,7 +27,7 @@ class LogRSSMV1Output(lightning.Callback):
         self.every_n_epochs = every_n_epochs
         self.indices = indices
 
-    def on_validation_batch_end(  # noqa: PLR0913
+    def on_validation_batch_end(
         self,
         trainer: lightning.Trainer,
         pl_module: lightning.LightningModule,

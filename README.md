@@ -31,37 +31,3 @@ from rssm import RSSMV1
 reference = <wandb reference>
 rssm = RSSMV1.load_from_wandb(reference=reference)
 ```
-
-## Dependencies
-
-Modules specified in `pyproject.toml`;
-
-- [einops](https://github.com/arogozhnikov/einops.git)
-- [wandb](https://github.com/wandb/wandb.git)
-- [nomutin/distribution-extention](https://github.com/nomutin/distribution-extention.git)
-- [nomutin/cnn](https://github.com/nomutin/cnn.git)
-
-Modules not specified in `pyproject.toml` (to avoid device errors);
-
-- [torch](https://github.com/pytorch/pytorch.git)
-- [lightning](https://github.com/Lightning-AI/pytorch-lightning.git)
-
-## Installation
-
-### pip
-
-```shell
-pip install git+https://github.com/nomutin/RSSM.git
-```
-
-### poetry
-
-```shell
-poetry add git+https://github.com/nomutin/RSSM.git
-```
-
-### rye
-
-```shell
-rye add rssm --git=https://github.com/nomutin/RSSM.git
-```

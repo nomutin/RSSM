@@ -1,4 +1,8 @@
-"""Modules related to fully-connected layers."""
+"""
+Modules related to fully-connected layers.
+
+TODO: Remove this
+"""
 
 from __future__ import annotations
 
@@ -18,7 +22,7 @@ class MLP(nn.Module):
     5. `out_activation()`
     """
 
-    def __init__(  # noqa: PLR0913
+    def __init__(
         self,
         input_size: int,
         output_size: int,

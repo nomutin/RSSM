@@ -1,5 +1,8 @@
-"""Abstract class for RSSM V1/V2 State."""
+"""
+Abstract class for RSSM V1/V2 State.
 
+TODO: Change to tensordict
+"""
 
 from __future__ import annotations
 
@@ -9,7 +12,7 @@ import torch
 from torch import Tensor
 
 if TYPE_CHECKING:
-    from distribution_extention import Distribution
+    from distribution_extension import Distribution
 
 Slice = Union[slice, int, Tuple[Union[slice, int], ...]]
 

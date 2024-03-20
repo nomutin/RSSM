@@ -1,10 +1,10 @@
 """Representation model for RSSM V1."""
 
 import torch
-from distribution_extention import NormalFactory
+from distribution_extension import NormalFactory
 from torch import Tensor
 
-from rssm.base.module import Representation, RepresentationConfig
+from rssm.base.module import Representation
 from rssm.base.state import State
 from rssm.networks.fc import MLP
 
@@ -18,15 +18,22 @@ class RepresentationV1(Representation):
     ```
     """
 
-    def __init__(self, config: RepresentationConfig) -> None:
+    def __init__(
+        self,
+        deterministic_size: int,
+        stochastic_size: int,
+        hidden_size: int,
+        obs_embed_size: int,
+        activation_name: str,
+    ) -> None:
         """Set components."""
         super().__init__()
 
         self.rnn_to_post_projector = MLP(
-            input_size=config.obs_embed_size + config.deterministic_size,
-            output_size=config.stochastic_size * 2,
-            hidden_size=config.hidden_size,
-            activation_name=config.activation_name,
+            input_size=obs_embed_size + deterministic_size,
+            output_size=stochastic_size * 2,
+            hidden_size=hidden_size,
+            activation_name=activation_name,
             num_hidden_layers=0,
             out_activation_name="Identity",
         )
@@ -47,6 +54,7 @@ class RepresentationV1(Representation):
         -------
         State
             Approximate posterior state.
+
         """
         projector_input = torch.cat([prior_state.deter, obs_embed], -1)
         stoch_source = self.rnn_to_post_projector.forward(projector_input)

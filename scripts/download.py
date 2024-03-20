@@ -14,7 +14,7 @@ import gdown
 def main(url: str) -> None:
     """Download the data specified in `data_names`."""
     filename = gdown.download(url, quiet=False, fuzzy=True)
-    tarfile.open(filename, "r:gz").extractall()
+    tarfile.open(filename, "r:gz")
     Path(filename).unlink(missing_ok=False)
 
 

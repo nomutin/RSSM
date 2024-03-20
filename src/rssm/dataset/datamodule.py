@@ -26,36 +26,29 @@ class Transforms:
 class ActionObservationDataset(Dataset):
     """Dataset with actions & observations."""
 
-    def __init__(
-        self,
-        path_to_data: Path,
-        seq_per_batch: int,
-        transforms: Transforms,
-    ) -> None:
+    def __init__(self, path: Path, transforms: Transforms) -> None:
         """Initialize `PlayDataset` ."""
         super().__init__()
-        self.path_to_data = path_to_data
-        self.seq_per_batch = seq_per_batch
+        self.path = path
         self.transforms = transforms
-        self.data_size = len(list(self.path_to_data.glob("action_*.pt")))
+        self.data_size = len(list(self.path.glob("action_*.pt")))
 
     def __len__(self) -> int:
         """Return the number of data increase by `seq_per_batch`."""
-        return self.data_size * self.seq_per_batch
+        return self.data_size
 
     def load_action(self, idx: int) -> Tensor:
         """Load action data (sequence)."""
-        action_path = self.path_to_data / f"action_{idx}.pt"
+        action_path = self.path / f"action_{idx}.pt"
         return load(action_path)
 
     def load_observation(self, idx: int) -> Tensor:
         """Load observation data (sequence)."""
-        observation_path = self.path_to_data / f"observation_{idx}.pt"
+        observation_path = self.path / f"observation_{idx}.pt"
         return load(observation_path)
 
     def __getitem__(self, idx: int) -> tuple[Tensor, Tensor, Tensor, Tensor]:
         """Apply transforms to and return tensors."""
-        idx = idx // self.seq_per_batch
         action = self.transforms.action(self.load_action(idx))
         observation = self.transforms.observation(self.load_observation(idx))
         return (
@@ -69,12 +62,11 @@ class ActionObservationDataset(Dataset):
 class ActionObservationDataModule(LightningDataModule):
     """DataModule with actions & observations."""
 
-    def __init__(  # noqa: PLR0913
+    def __init__(
         self,
         data_name: str,
         batch_size: int,
         num_workers: int,
-        seq_per_batch: int,
         train_transforms: Transforms,
         val_transforms: Transforms,
     ) -> None:
@@ -83,7 +75,6 @@ class ActionObservationDataModule(LightningDataModule):
         self.data_name = data_name
         self.batch_size = batch_size
         self.num_workers = num_workers
-        self.seq_per_batch = seq_per_batch
         self.train_transforms = train_transforms
         self.val_transforms = val_transforms
 
@@ -93,13 +84,11 @@ class ActionObservationDataModule(LightningDataModule):
     def setup(self, stage: str = "train") -> None:  # noqa: ARG002
         """Set up train/val/test dataset."""
         self.train_dataset = ActionObservationDataset(
-            path_to_data=self.path_to_train,
-            seq_per_batch=self.seq_per_batch,
+            path=self.path_to_train,
             transforms=self.train_transforms,
         )
         self.val_dataset = ActionObservationDataset(
-            path_to_data=self.path_to_val,
-            seq_per_batch=1,
+            path=self.path_to_val,
             transforms=self.val_transforms,
         )
 

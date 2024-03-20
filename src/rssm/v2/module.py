@@ -5,16 +5,16 @@ from __future__ import annotations
 from typing import Any
 
 import torch
-from cnn import Decoder, DecoderConfig, Encoder, EncoderConfig
-from distribution_extention import (
+from distribution_extension import (
     MultiDimentionalOneHotCategoricalFactory,
     kl_divergence,
 )
 from torch import Tensor
 
 from rssm.base.loss import likelihood
-from rssm.base.module import RSSM, RepresentationConfig, TransitionConfig
+from rssm.base.module import RSSM
 from rssm.base.state import State, cat_states, stack_states
+from rssm.networks.cnn import Decoder, Encoder
 from rssm.v2.representation import RepresentationV2
 from rssm.v2.transition import TransitionV2
 
@@ -26,27 +26,53 @@ class RSSMV2(RSSM):
     References
     ----------
     - https://arxiv.org/abs/2010.02193
+
     """
 
     def __init__(
         self,
-        transition_config: TransitionConfig,
-        representation_config: RepresentationConfig,
-        encoder_config: EncoderConfig,
-        decoder_config: DecoderConfig,
+        deterministic_size: int,
+        class_size: int,
+        category_size: int,
+        hidden_size: int,
+        obs_embed_size: int,
+        action_size: int,
+        activation_name: str,
+        observation_shape: tuple[int, int, int],
+        kl_coeff: float,
     ) -> None:
         """Initialize RSSM components."""
         super().__init__()
         self.save_hyperparameters()
-        self.representation = RepresentationV2(representation_config)
-        self.transition = TransitionV2(transition_config)
-        self.encoder = Encoder(config=encoder_config)
-        self.decoder = Decoder(config=decoder_config)
-        self.distribution_factory = MultiDimentionalOneHotCategoricalFactory(
-            class_size=representation_config.class_size,
-            category_size=representation_config.category_size,
+        self.representation = RepresentationV2(
+            deterministic_size=deterministic_size,
+            hidden_size=hidden_size,
+            obs_embed_size=obs_embed_size,
+            class_size=class_size,
+            category_size=category_size,
+            activation_name=activation_name,
         )
-        self.kl_factor = 0.1
+        self.transition = TransitionV2(
+            deterministic_size=deterministic_size,
+            hidden_size=hidden_size,
+            action_size=action_size,
+            class_size=class_size,
+            category_size=category_size,
+            activation_name=activation_name,
+        )
+        self.encoder = Encoder(
+            latent_dim=obs_embed_size,
+            obs_shape=observation_shape,
+        )
+        self.decoder = Decoder(
+            latent_dim=deterministic_size + class_size * category_size,
+            obs_shape=observation_shape,
+        )
+        self.distribution_factory = MultiDimentionalOneHotCategoricalFactory(
+            class_size=class_size,
+            category_size=category_size,
+        )
+        self.kl_coeff = kl_coeff
 
     def initial_state(self, batch_size: int) -> State:
         """Generate initial state as zero matrix."""
@@ -56,14 +82,6 @@ class RSSMV2(RSSM):
         stoch = torch.zeros([batch_size, stoch_size])
         distribution = self.distribution_factory.forward(stoch)
         return State(deter=deter, distribution=distribution).to(self.device)
-
-    def encode(self, observation: Tensor) -> Tensor:
-        """Encode observation."""
-        return self.encoder.forward(observation)
-
-    def decode(self, state: State) -> Tensor:
-        """Decode state."""
-        return self.decoder.forward(state.feature)
 
     def rollout_representation(
         self,
@@ -82,8 +100,9 @@ class RSSMV2(RSSM):
             5D Tensor [batch_size, seq_len, channel, height, width].
         prev_state : State
             2D Parameters [batch_size, state_size].
+
         """
-        obs_embed = self.encode(observation=observations)
+        obs_embed = self.encoder.forward(observations)
         priors, posteriors = [], []
         for t in range(observations.shape[1]):
             prior = self.transition.forward(actions[:, t], prev_state)
@@ -110,6 +129,7 @@ class RSSMV2(RSSM):
             3D Tensor [batch_size, seq_len, action_size].
         prev_state : State
             2D Parameters [batch_size, state_size].
+
         """
         priors = []
         for t in range(actions.shape[1]):
@@ -126,15 +146,15 @@ class RSSMV2(RSSM):
             observations=observation_input,
             prev_state=initial_state,
         )
-        reconstruction = self.decode(state=posterior)
+        reconstruction = self.decoder.forward(posterior.feature)
         recon_loss = likelihood(
             prediction=reconstruction,
             target=observation_target,
             event_ndims=3,
         )
         kl_div = kl_divergence(
-            q=posterior.distribution.independent(2),
-            p=prior.distribution.independent(2),
+            q=posterior.distribution.independent(1),
+            p=prior.distribution.independent(1),
             use_balancing=False,
         ).mul(self.kl_factor)
         return {

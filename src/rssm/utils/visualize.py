@@ -7,7 +7,6 @@ import torch
 from einops import pack, unpack
 from matplotlib import figure
 from torch import Tensor, uint8
-
 from wandb import Image, Video
 
 
@@ -40,6 +39,7 @@ def pca(data: Tensor, n_components: int = 2) -> tuple[Tensor, Tensor]:
         PCA-transformed data. Tensor shaped [batch*, n_components].
     Tensor
         Explained variance ratio. Tensor shaped [n_components].
+
     """
     data, ps = pack([data], "* d")
     _, s, v = torch.pca_lowrank(data, q=n_components)
