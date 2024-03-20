@@ -11,10 +11,10 @@ import torch
 import wandb
 from torch import nn
 
+from rssm.base.state import State, stack_states
+
 if TYPE_CHECKING:
     from torch import Tensor
-
-    from rssm.base.state import State
 
 
 class Representation(nn.Module):
@@ -76,13 +76,24 @@ class Transition(nn.Module):
 
 
 class RSSM(lightning.LightningModule):
-    """Abstract class for RSSM."""
+    """
+    Abstract class for RSSM.
+
+    Note:
+    ----
+    Inherited classes must implement:
+        - `initial_state()`
+        - `_shared_step()`
+
+    """
 
     def __init__(self) -> None:
         """Initialize components for type hinting."""
         super().__init__()
         self.representation = Representation()
         self.transition = Transition()
+        self.encoder = nn.Module()
+        self.decoder = nn.Module()
 
     def initial_state(self, batch_size: int) -> State:
         """Generate initial state as zero matrix."""
@@ -95,19 +106,30 @@ class RSSM(lightning.LightningModule):
         prev_state: State,
     ) -> tuple[State, State]:
         """
-        Rollout posterior roop.
+        Rollout representation (posterior loop).
 
         Parameters
         ----------
         actions : Tensor
-            Action sequence. Shape: (batch_size, seq_len, action_size)
+            3D Tensor [batch_size, seq_len, action_size].
         observations : Tensor
-            Observation sequence. Shape: (batch_size, seq_len, obs_size)
+            5D Tensor [batch_size, seq_len, channel, height, width].
         prev_state : State
-            Previous state. Shape: (batch_size, feature_size)
+            2D Parameters [batch_size, state_size].
 
         """
-        raise NotImplementedError
+        obs_embed = self.encoder.forward(observations)
+        priors, posteriors = [], []
+        for t in range(observations.shape[1]):
+            prior = self.transition.forward(actions[:, t], prev_state)
+            posterior = self.representation.forward(obs_embed[:, t], prior)
+            priors.append(prior)
+            posteriors.append(posterior)
+            prev_state = posterior
+
+        prior = stack_states(priors, dim=1)
+        posterior = stack_states(posteriors, dim=1)
+        return posterior, prior
 
     def rollout_transition(
         self,
@@ -115,17 +137,21 @@ class RSSM(lightning.LightningModule):
         prev_state: State,
     ) -> State:
         """
-        Rollout prior loop.
+        Rollout transition (prior loop) aka latent imagination.
 
         Parameters
         ----------
         actions : Tensor
-            Action sequence. Shape: (batch_size, seq_len, action_size)
+            3D Tensor [batch_size, seq_len, action_size].
         prev_state : State
-            Previous state. Shape: (batch_size, feature_size)
+            2D Parameters [batch_size, state_size].
 
         """
-        raise NotImplementedError
+        priors = []
+        for t in range(actions.shape[1]):
+            prev_state = self.transition.forward(actions[:, t], prev_state)
+            priors.append(prev_state)
+        return stack_states(priors, dim=1)
 
     def training_step(self, batch: list, **_: dict) -> dict[str, Tensor]:
         """Rollout training step."""

@@ -11,7 +11,6 @@ clean:  ## 実行に影響のないファイル(.*_cacheとか)を削除
 format:  ## コードのフォーマット(isort->black->ruff)
 	isort . && \
 	black . && \
-	ruff --fix . && \
 	ruff format .
 
 lint:  ## コードのLint(isort->black->mypy->ruff)
@@ -28,10 +27,10 @@ install:  ## 仮想環境の作成
 	rye run pre-commit install
 
 train:  ## `make train f=<path_to_config>` で学習を実行
-	python scripts/train.py $(f)
+	python scripts/train.py fit --config $(f)
 
 debug: ## `make debug f=<path_to_config>` でデバック用epochを回す
-	python scripts/debug.py $(f)
+	python scripts/train.py fit --config $(f) --trainer.fast_dev_run true
 
 download: ## `make download l=<url>` でgoogle driveからダウンロード
 	python scripts/download.py $(l)

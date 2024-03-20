@@ -44,6 +44,7 @@ class LogRSSMV1Output(lightning.Callback):
         if not isinstance(pl_module, RSSMV1):
             return
 
+        # TODO: test_stepはこの関数に定義
         outputs = pl_module.test_step(batch)
 
         _, observation, _, _ = batch

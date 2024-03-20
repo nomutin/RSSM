@@ -73,24 +73,32 @@ warn_unused_ignores = true           # 使用されていない`# type: ignore`�
 disallow_untyped_calls = false       # 型注釈がない関数やメソッドの呼び出しを禁止
 warn_return_any = false              # `Any`型を返す関数やメソッドに警告
 
+
 [tool.ruff]
+output-format = "grouped"
+line-length = 79
+target-version = "py38"
+
+[tool.ruff.lint]
 select = ["ALL"]
 ignore = [
     "D203",    # one-blank-line-before-class
     "D212",    # multi-line-summary-first-line
-    "S101",    # Use of assert detected
     "ANN101",  # Missing type annotation for self in method
     "ANN102",  # Missing type annotation for cls in classmethod
     "PGH003",  # Use specific rule codes when ignoring type issues
     "PLR0913", # Too many arguments in function definition
     "I",
+    "ISC001",  # single-line-implicit-string-concatenation
+    "COM812",  # missing-trailing-comma
 ]
 fixable = ["ALL"]
 unfixable = []
 exclude = [".git", ".ruff_cache", ".venv",]
-line-length = 79
 dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
-target-version = "py38"
+
+[tool.ruff.format]
+preview = true
 
 [tool.isort]
 profile = "black"
