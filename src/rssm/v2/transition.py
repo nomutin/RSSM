@@ -3,10 +3,10 @@
 import torch
 from distribution_extension import MultiDimentionalOneHotCategoricalFactory
 from torch import Tensor, nn
+from torchrl.modules import MLP
 
 from rssm.base.module import Transition
 from rssm.base.state import State
-from rssm.networks.fc import MLP
 
 
 class TransitionV2(Transition):
@@ -36,20 +36,20 @@ class TransitionV2(Transition):
             hidden_size=deterministic_size,
         )
         self.action_state_projector = MLP(
-            input_size=action_size + class_size * category_size,
-            output_size=hidden_size,
-            hidden_size=hidden_size,
-            activation_name=activation_name,
-            num_hidden_layers=0,
-            out_activation_name="Identity",
+            in_features=action_size + class_size * category_size,
+            out_features=hidden_size,
+            num_cells=hidden_size,
+            depth=1,
+            activation_class=getattr(torch.nn, activation_name),
+            activate_last_layer=False,
         )
         self.rnn_to_prior_projector = MLP(
-            input_size=deterministic_size,
-            output_size=class_size * category_size,
-            hidden_size=hidden_size,
-            activation_name=activation_name,
-            num_hidden_layers=0,
-            out_activation_name="Identity",
+            in_features=deterministic_size,
+            out_features=class_size * category_size,
+            num_cells=hidden_size,
+            depth=1,
+            activation_class=getattr(torch.nn, activation_name),
+            activate_last_layer=False,
         )
         self.distribution_factory = MultiDimentionalOneHotCategoricalFactory(
             class_size=class_size,

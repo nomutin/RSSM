@@ -3,10 +3,10 @@
 import torch
 from distribution_extension import MultiDimentionalOneHotCategoricalFactory
 from torch import Tensor
+from torchrl.modules import MLP
 
 from rssm.base.module import Representation
 from rssm.base.state import State
-from rssm.networks.fc import MLP
 
 
 class RepresentationV2(Representation):
@@ -31,12 +31,12 @@ class RepresentationV2(Representation):
         super().__init__()
 
         self.rnn_to_post_projector = MLP(
-            input_size=obs_embed_size + deterministic_size,
-            output_size=class_size * category_size,
-            hidden_size=hidden_size,
-            activation_name=activation_name,
-            num_hidden_layers=0,
-            out_activation_name="Identity",
+            in_features=obs_embed_size + deterministic_size,
+            out_features=class_size * category_size,
+            num_cells=hidden_size,
+            depth=1,
+            activation_class=getattr(torch.nn, activation_name),
+            activate_last_layer=False,
         )
         self.distribution_factory = MultiDimentionalOneHotCategoricalFactory(
             class_size=class_size,
@@ -61,6 +61,6 @@ class RepresentationV2(Representation):
 
         """
         projector_input = torch.cat([prior_state.deter, obs_embed], -1)
-        stoch_source = self.rnn_to_post_projector.forward(projector_input)
+        stoch_source = self.rnn_to_post_projector(projector_input)
         distribution = self.distribution_factory.forward(stoch_source)
         return State(deter=prior_state.deter, distribution=distribution)

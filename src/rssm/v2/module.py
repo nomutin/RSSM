@@ -59,11 +59,11 @@ class RSSMV2(RSSM):
             activation_name=activation_name,
         )
         self.encoder = Encoder(
-            latent_dim=obs_embed_size,
+            obs_embed_size=obs_embed_size,
             obs_shape=observation_shape,
         )
         self.decoder = Decoder(
-            latent_dim=deterministic_size + class_size * category_size,
+            latent_size=deterministic_size + class_size * category_size,
             obs_shape=observation_shape,
         )
         self.distribution_factory = MultiDimentionalOneHotCategoricalFactory(

@@ -58,11 +58,11 @@ class RSSMV1(RSSM):
             activation_name=activation_name,
         )
         self.encoder = Encoder(
-            latent_dim=obs_embed_size,
+            obs_embed_size=obs_embed_size,
             obs_shape=observation_shape,
         )
         self.decoder = Decoder(
-            latent_dim=obs_embed_size,
+            latent_size=deterministic_size + stochastic_size,
             obs_shape=observation_shape,
         )
         self.kl_coeff = kl_coeff
