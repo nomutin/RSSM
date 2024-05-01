@@ -21,13 +21,13 @@ class TransitionV1(Transition):
 
     def __init__(
         self,
+        *,
         deterministic_size: int,
         stochastic_size: int,
         hidden_size: int,
         action_size: int,
         activation_name: str,
     ) -> None:
-        """Set components."""
         super().__init__()
 
         self.rnn_cell = nn.GRUCell(

@@ -20,6 +20,7 @@ class RepresentationV2(Representation):
 
     def __init__(
         self,
+        *,
         deterministic_size: int,
         hidden_size: int,
         obs_embed_size: int,

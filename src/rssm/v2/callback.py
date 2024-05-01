@@ -1,32 +1,27 @@
 """Callbacks for RSSM v2."""
 
-from typing import TYPE_CHECKING, Any, Mapping
+from collections.abc import Mapping
+from typing import Any
 
 import lightning
 from lightning.pytorch.loggers import WandbLogger
+from torch import Tensor
 
 from rssm.utils.visualize import to_pca_wandb_image, to_wandb_movie
 from rssm.v2.module import RSSMV2
-
-if TYPE_CHECKING:
-    from torch import Tensor
 
 
 class LogRSSMV2Output(lightning.Callback):
     """Callback to visualize RSSM output."""
 
-    def __init__(
-        self,
-        every_n_epochs: int,
-        indices: list[int],
-    ) -> None:
-        """Set parameters and load dataloader."""
+    def __init__(self, every_n_epochs: int, indices: list[int]) -> None:
         super().__init__()
         self.every_n_epochs = every_n_epochs
         self.indices = indices
 
     def on_validation_batch_end(
         self,
+        *,
         trainer: lightning.Trainer,
         pl_module: lightning.LightningModule,
         outputs: Tensor | Mapping[str, Any] | None,

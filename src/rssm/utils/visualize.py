@@ -69,4 +69,4 @@ def to_pca_wandb_image(tensor: Tensor, indices: list[int]) -> Image:
 def to_wandb_movie(tensor: Tensor) -> Video:
     """Convert image tensor to wandb video."""
     tensor = tensor.detach().cpu().mul(255)
-    return Video(tensor.to(dtype=uint8))  # type: ignore
+    return Video(tensor.to(dtype=uint8))  # type: ignore[arg-type]

@@ -1,18 +1,12 @@
-"""
-Abstract class for RSSM V1/V2 State.
+"""Abstract class for RSSM V1/V2 State."""
 
-TODO: Change to tensordict
-"""
-
-from typing import TYPE_CHECKING, Generator, Tuple, Union
+from collections.abc import Generator
 
 import torch
+from distribution_extension import Distribution
 from torch import Tensor
 
-if TYPE_CHECKING:
-    from distribution_extension import Distribution
-
-Slice = Union[slice, int, Tuple[Union[slice, int], ...]]
+Slice = slice | int | tuple[slice | int, ...]
 
 
 class State:
@@ -32,14 +26,14 @@ class State:
             yield self[i]
             i += 1
 
-    def __getitem__(self, loc: Slice) -> State:
+    def __getitem__(self, loc: Slice) -> "State":
         """Slice the state."""
         return type(self)(
             deter=self.deter[loc],
             distribution=self.distribution[loc],
         )
 
-    def to(self, device: torch.device) -> State:
+    def to(self, device: torch.device) -> "State":
         """Move the state to the given device."""
         return type(self)(
             deter=self.deter.to(device),
@@ -51,21 +45,21 @@ class State:
         """Return the shape of the state."""
         return self.deter.shape
 
-    def squeeze(self, dim: int) -> State:
+    def squeeze(self, dim: int) -> "State":
         """Squeeze the state along the given dimension."""
         return type(self)(
             deter=self.deter.squeeze(dim),
             distribution=self.distribution.squeeze(dim),
         )
 
-    def unsqueeze(self, dim: int) -> State:
+    def unsqueeze(self, dim: int) -> "State":
         """Unsqueeze the state along the given dimension."""
         return type(self)(
             deter=self.deter.unsqueeze(dim),
             distribution=self.distribution.unsqueeze(dim),
         )
 
-    def detach(self) -> State:
+    def detach(self) -> "State":
         """Detach the state."""
         return type(self)(
             deter=self.deter.detach(),

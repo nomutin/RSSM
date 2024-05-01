@@ -1,6 +1,6 @@
 # RSSM
 
-![python](https://img.shields.io/badge/python-3.8-blue)
+![python](https://img.shields.io/badge/python-3.10-blue)
 [![Rye](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/mitsuhiko/rye/main/artwork/badge.json)](https://rye-up.com)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/charliermarsh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 

@@ -2,17 +2,13 @@
 
 import tempfile
 from pathlib import Path
-from typing import TYPE_CHECKING
 
 import lightning
 import torch
 import wandb
-from torch import nn
+from torch import Tensor, nn
 
 from rssm.base.state import State, stack_states
-
-if TYPE_CHECKING:
-    from torch import Tensor
 
 
 class Representation(nn.Module):
@@ -25,7 +21,6 @@ class Representation(nn.Module):
     """
 
     def __init__(self) -> None:
-        """Initialize components for type hinting."""
         super().__init__()
         self.rnn_to_post_projector = nn.Module()
         self.distribution_factory = nn.Module()
@@ -46,7 +41,6 @@ class Transition(nn.Module):
     """
 
     def __init__(self) -> None:
-        """Initialize components for type hinting."""
         super().__init__()
         self.rnn_cell = nn.Module()
         self.action_state_projector = nn.Module()
@@ -86,7 +80,6 @@ class RSSM(lightning.LightningModule):
     """
 
     def __init__(self) -> None:
-        """Initialize components for type hinting."""
         super().__init__()
         self.representation = Representation()
         self.transition = Transition()
@@ -129,11 +122,7 @@ class RSSM(lightning.LightningModule):
         posterior = stack_states(posteriors, dim=1)
         return posterior, prior
 
-    def rollout_transition(
-        self,
-        actions: Tensor,
-        prev_state: State,
-    ) -> State:
+    def rollout_transition(self, actions: Tensor, prev_state: State) -> State:
         """
         Rollout transition (prior loop) aka latent imagination.
 
@@ -151,13 +140,17 @@ class RSSM(lightning.LightningModule):
             priors.append(prev_state)
         return stack_states(priors, dim=1)
 
-    def training_step(self, batch: list, **_: dict) -> dict[str, Tensor]:
+    def training_step(
+        self, batch: list[Tensor], **_: dict[str, str]
+    ) -> dict[str, Tensor]:
         """Rollout training step."""
         loss_dict = self._shared_step(batch)
         self.log_dict(loss_dict, prog_bar=True, sync_dist=True)
         return loss_dict
 
-    def validation_step(self, batch: list, _: int) -> dict[str, Tensor]:
+    def validation_step(
+        self, batch: list[Tensor], _: int
+    ) -> dict[str, Tensor]:
         """Rollout validation step."""
         loss_dict = self._shared_step(batch)
         loss_dict = {"val_" + k: v for k, v in loss_dict.items()}
@@ -169,7 +162,7 @@ class RSSM(lightning.LightningModule):
         raise NotImplementedError
 
     @classmethod
-    def load_from_wandb(cls, reference: str) -> RSSM:
+    def load_from_wandb(cls, reference: str) -> "RSSM":
         """Load the model from wandb checkpoint."""
         run = wandb.Api().artifact(reference)
         with tempfile.TemporaryDirectory() as tmpdir:

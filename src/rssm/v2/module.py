@@ -27,6 +27,7 @@ class RSSMV2(RSSM):
 
     def __init__(
         self,
+        *,
         deterministic_size: int,
         class_size: int,
         category_size: int,

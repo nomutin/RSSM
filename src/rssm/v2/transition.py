@@ -21,6 +21,7 @@ class TransitionV2(Transition):
 
     def __init__(
         self,
+        *,
         deterministic_size: int,
         hidden_size: int,
         action_size: int,

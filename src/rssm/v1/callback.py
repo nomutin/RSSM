@@ -1,15 +1,14 @@
 """Callbacks for RSSM v1."""
 
-from typing import TYPE_CHECKING, Any, Mapping
+from collections.abc import Mapping
+from typing import Any
 
 import lightning
 from lightning.pytorch.loggers import WandbLogger
+from torch import Tensor
 
 from rssm.utils.visualize import to_pca_wandb_image, to_wandb_movie
 from rssm.v1.module import RSSMV1
-
-if TYPE_CHECKING:
-    from torch import Tensor
 
 
 class LogRSSMV1Output(lightning.Callback):
@@ -27,6 +26,7 @@ class LogRSSMV1Output(lightning.Callback):
 
     def on_validation_batch_end(
         self,
+        *,
         trainer: lightning.Trainer,
         pl_module: lightning.LightningModule,
         outputs: Tensor | Mapping[str, Any] | None,
@@ -42,7 +42,6 @@ class LogRSSMV1Output(lightning.Callback):
         if not isinstance(pl_module, RSSMV1):
             return
 
-        # TODO: test_stepはこの関数に定義
         outputs = pl_module.test_step(batch)
 
         _, observation, _, _ = batch

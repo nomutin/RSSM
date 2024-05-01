@@ -20,6 +20,7 @@ class RepresentationV1(Representation):
 
     def __init__(
         self,
+        *,
         deterministic_size: int,
         stochastic_size: int,
         hidden_size: int,

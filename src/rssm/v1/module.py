@@ -1,9 +1,8 @@
 """World Model."""
 
-from typing import TYPE_CHECKING
-
 import torch
 from distribution_extension import Normal, kl_divergence
+from torch import Tensor
 
 from rssm.base.loss import likelihood
 from rssm.base.module import RSSM
@@ -11,9 +10,6 @@ from rssm.base.state import State
 from rssm.networks.cnn import Decoder, Encoder
 from rssm.v1.representation import RepresentationV1
 from rssm.v1.transition import TransitionV1
-
-if TYPE_CHECKING:
-    from torch import Tensor
 
 
 class RSSMV1(RSSM):
@@ -29,6 +25,7 @@ class RSSMV1(RSSM):
 
     def __init__(
         self,
+        *,
         deterministic_size: int,
         stochastic_size: int,
         hidden_size: int,

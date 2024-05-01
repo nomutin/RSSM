@@ -38,15 +38,17 @@ packages = ["src/rssm"]
 python_version = "3.10"
 
 [tool.ruff]
-line-length = 120
+line-length = 79
 target-version = "py310"
 
 [tool.ruff.lint]
+preview = true
 select = ["ALL"]
 ignore = [
     "CPY001",  # missing-copyright-notice
     "ISC001",  # single-line-implicit-string-concatenation
     "COM812",  # missing-comma-in-multiline
+    "PLR0913",
 ]
 fixable = ["ALL"]
 unfixable = []
