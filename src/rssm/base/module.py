@@ -1,7 +1,5 @@
 """Abstract classes for RSSM."""
 
-from __future__ import annotations
-
 import tempfile
 from pathlib import Path
 from typing import TYPE_CHECKING

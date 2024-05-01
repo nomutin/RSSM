@@ -4,8 +4,6 @@ Abstract class for RSSM V1/V2 State.
 TODO: Change to tensordict
 """
 
-from __future__ import annotations
-
 from typing import TYPE_CHECKING, Generator, Tuple, Union
 
 import torch

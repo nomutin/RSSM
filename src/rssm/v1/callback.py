@@ -1,7 +1,5 @@
 """Callbacks for RSSM v1."""
 
-from __future__ import annotations
-
 from typing import TYPE_CHECKING, Any, Mapping
 
 import lightning

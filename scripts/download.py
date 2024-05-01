@@ -1,7 +1,5 @@
 """Download data from Google Drive."""
 
-from __future__ import annotations
-
 import tarfile
 from pathlib import Path
 

@@ -9,7 +9,6 @@ dependencies = [
     "einops>=0.7.0",
     "wandb>=0.16.4",
     "rich>=13.7.1",
-    "lightning-bolts>=0.7.0",
     "distribution-extension @ git+https://github.com/nomutin/distribution-extension.git",
     "matplotlib>=3.7.5",
     "gdown>=5.1.0",
@@ -25,12 +24,8 @@ build-backend = "hatchling.build"
 [tool.rye]
 managed = true
 dev-dependencies = [
-    "pytest-cov>=4.1.0",
-    "isort>=5.13.2",
-    "ruff>=0.3.3",
-    "black>=24.3.0",
     "mypy>=1.9.0",
-    "pre-commit>=3.5.0",
+    "ruff>=0.4.2",
 ]
 
 [tool.hatch.metadata]
@@ -39,59 +34,19 @@ allow-direct-references = true
 [tool.hatch.build.targets.wheel]
 packages = ["src/rssm"]
 
-[tool.black]
-line-length = 79
-
-[tool.pytest.ini_options]
-filterwarnings = [
-    "ignore::UserWarning",
-    "ignore::DeprecationWarning",
-    'ignore:distutils Version classes are deprecated.:DeprecationWarning',
-]
-
-[tool.mypy]  # TODO: simplify settings
-python_version = 3.8
-# following setting is same as pysen
-# https://github.com/pfnet/pysen/blob/main/setup.cfg#L12
-check_untyped_defs = true            # 型注釈がない関数やメソッドに対して型チェックを行う
-disallow_any_decorated = false 
-disallow_any_generics = false
-disallow_any_unimported = false
-disallow_incomplete_defs = true      # 型注釈の一部が欠けている関数やメソッドの定義を禁止
-disallow_subclassing_any = true
-disallow_untyped_decorators = true   # 型注釈がないデコレータの使用を禁止
-disallow_untyped_defs = true         # 型注釈がない関数やメソッドの定義を禁止
-ignore_errors = false                # エラーを無視
-ignore_missing_imports = true        # 型チェック対象外のモジュールを無視
-no_implicit_optional = true          # 暗黙のOptionalを禁止
-show_error_codes = true              # エラーコードを表示
-strict_equality = true               # 異なる型同士の比較を禁止
-strict_optional = true               # Noneと他の型の混在を許容しない
-warn_redundant_casts = true          # 不要な型変換に警告
-warn_unreachable = true              # 到達不能なコードに警告
-warn_unused_configs = true           # 使用されていないconfigオプションに警告
-warn_unused_ignores = true           # 使用されていない`# type: ignore`コメントに警告
-disallow_untyped_calls = false       # 型注釈がない関数やメソッドの呼び出しを禁止
-warn_return_any = false              # `Any`型を返す関数やメソッドに警告
-
+[tool.mypy]
+python_version = "3.10"
 
 [tool.ruff]
-output-format = "grouped"
-line-length = 79
-target-version = "py38"
+line-length = 120
+target-version = "py310"
 
 [tool.ruff.lint]
 select = ["ALL"]
 ignore = [
-    "D203",    # one-blank-line-before-class
-    "D212",    # multi-line-summary-first-line
-    "ANN101",  # Missing type annotation for self in method
-    "ANN102",  # Missing type annotation for cls in classmethod
-    "PGH003",  # Use specific rule codes when ignoring type issues
-    "PLR0913", # Too many arguments in function definition
-    "I",
+    "CPY001",  # missing-copyright-notice
     "ISC001",  # single-line-implicit-string-concatenation
-    "COM812",  # missing-trailing-comma
+    "COM812",  # missing-comma-in-multiline
 ]
 fixable = ["ALL"]
 unfixable = []
@@ -101,6 +56,8 @@ dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
 [tool.ruff.format]
 preview = true
 
-[tool.isort]
-profile = "black"
-line_length = 79
+[tool.ruff.lint.isort]
+known-first-party = ["rssm"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "numpy"
