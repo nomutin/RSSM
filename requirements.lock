@@ -34,7 +34,7 @@ contourpy==1.2.1
     # via matplotlib
 cycler==0.12.1
     # via matplotlib
-distribution-extension @ git+https://github.com/nomutin/distribution-extension.git@66032c90ba275d57f5b4b4d4bd1de5bbdeb31aee
+distribution-extension @ git+https://github.com/nomutin/distribution-extension.git@34c887bf482345085628e1416bbe199a4b04534d
     # via rssm
 docker-pycreds==0.4.0
     # via wandb

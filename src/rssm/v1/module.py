@@ -1,15 +1,12 @@
-"""World Model."""
-
 import torch
 from distribution_extension import Normal, kl_divergence
 from torch import Tensor
+from torchrl.modules import ObsDecoder, ObsEncoder
 
-from rssm.base.loss import likelihood
 from rssm.base.module import RSSM
-from rssm.base.state import State
-from rssm.networks.cnn import Decoder, Encoder
-from rssm.v1.representation import RepresentationV1
-from rssm.v1.transition import TransitionV1
+from rssm.base.state import State, cat_states
+from rssm.objective import likelihood
+from rssm.v1.network import RepresentationV1, TransitionV1
 
 
 class RSSMV1(RSSM):
@@ -32,7 +29,6 @@ class RSSMV1(RSSM):
         obs_embed_size: int,
         action_size: int,
         activation_name: str,
-        observation_shape: tuple[int, int, int],
         kl_coeff: float,
     ) -> None:
         """Initialize RSSM components."""
@@ -52,22 +48,16 @@ class RSSMV1(RSSM):
             action_size=action_size,
             activation_name=activation_name,
         )
-        self.encoder = Encoder(
-            obs_embed_size=obs_embed_size,
-            obs_shape=observation_shape,
-        )
-        self.decoder = Decoder(
-            latent_size=deterministic_size + stochastic_size,
-            obs_shape=observation_shape,
-        )
+        self.encoder = ObsEncoder(num_layers=3)
+        self.decoder = ObsDecoder(num_layers=3)
+        self.deterministic_size = deterministic_size
+        self.stochastic_size = stochastic_size
         self.kl_coeff = kl_coeff
 
     def initial_state(self, batch_size: int) -> State:
         """Generate initial state as zero matrix."""
-        deter_size = self.hparams["representation_config"].deterministic_size
-        stoch_size = self.hparams["representation_config"].stochastic_size
-        deter = torch.zeros([batch_size, deter_size])
-        stoch = torch.zeros([batch_size, stoch_size * 2])
+        deter = torch.zeros([batch_size, self.deterministic_size])
+        stoch = torch.zeros([batch_size, self.stochastic_size * 2])
         mean, std = torch.chunk(stoch, 2, dim=-1)
         distribution = Normal(mean, std)
         return State(deter=deter, distribution=distribution).to(self.device)
@@ -80,7 +70,10 @@ class RSSMV1(RSSM):
             observations=observation_input,
             prev_state=self.initial_state(batch_size=batch_size),
         )
-        reconstruction = self.decoder.forward(posterior.feature)
+        reconstruction = self.decoder.forward(
+            state=posterior.stoch,
+            rnn_hidden=posterior.deter,
+        )
         recon_loss = likelihood(
             prediction=reconstruction,
             target=observation_target,
@@ -97,4 +90,35 @@ class RSSMV1(RSSM):
             "kl": kl_div,
             "variance_max": posterior.distribution.variance.max().detach(),
             "variance_min": posterior.distribution.variance.min().detach(),
+        }
+
+    def imagination_step(
+        self,
+        batch: list[Tensor],
+        query_length: int,
+    ):
+        action_input, observation_input, _, observation_target = batch
+        batch_size = action_input.shape[0]
+        posterior, _ = self.rollout_representation(
+            actions=action_input,
+            observations=observation_input,
+            prev_state=self.initial_state(batch_size=batch_size),
+        )
+        posterior_reconstruction = self.decoder.forward(
+            state=posterior.stoch,
+            rnn_hidden=posterior.deter,
+        )
+        prior = self.rollout_transition(
+            actions=action_input[:, :query_length],
+            prev_state=posterior[:, -1],
+        )
+        prior = cat_states([posterior[:, :query_length], prior], dim=1)
+        prior_reconstruction = self.decoder.forward(
+            state=prior.stoch,
+            rnn_hidden=prior.deter,
+        )
+        return {
+            "posterior_reconstruction": posterior_reconstruction,
+            "prior_reconstruction": prior_reconstruction,
+            "observation_target": observation_target,
         }

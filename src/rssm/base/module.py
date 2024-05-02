@@ -3,71 +3,17 @@
 import tempfile
 from pathlib import Path
 
-import lightning
 import torch
 import wandb
+from lightning import LightningModule
 from torch import Tensor, nn
 
+from rssm.base.network import Representation, Transition
 from rssm.base.state import State, stack_states
+from rssm.custom_types import DataGroup, LossDict
 
 
-class Representation(nn.Module):
-    """
-    RSSM Representation Model.
-
-    ```
-    stochastic = MLP(Transition.deterministic, obs_embed)
-    ```
-    """
-
-    def __init__(self) -> None:
-        super().__init__()
-        self.rnn_to_post_projector = nn.Module()
-        self.distribution_factory = nn.Module()
-
-    def forward(self, obs_embed: Tensor, prior_state: State) -> State:
-        """Single step transition, includes prior transition."""
-        raise NotImplementedError
-
-
-class Transition(nn.Module):
-    """
-    RSSM Transition Model.
-
-    ```
-    deterministic = GRU(prev_action, prev_deterministic, prev_stochastic)
-    stochastic = MLP(deterministic)
-    ```
-    """
-
-    def __init__(self) -> None:
-        super().__init__()
-        self.rnn_cell = nn.Module()
-        self.action_state_projector = nn.Module()
-        self.rnn_to_prior_projector = nn.Module()
-        self.distribution_factory = nn.Module()
-
-    def forward(self, action: Tensor, prev_state: State) -> State:
-        """
-        Single step transition, includes deterministic transitions by GRUs.
-
-        Parameters
-        ----------
-        action : Tensor
-            (Prev) aciton of agent or robot. Shape: (batch_size, action_size)
-        prev_state : State
-            Previous state. Shape: (batch_size, action_size)
-
-        Returns
-        -------
-        State
-            Prior state.
-
-        """
-        raise NotImplementedError
-
-
-class RSSM(lightning.LightningModule):
+class RSSM(LightningModule):
     """
     Abstract class for RSSM.
 
@@ -140,24 +86,20 @@ class RSSM(lightning.LightningModule):
             priors.append(prev_state)
         return stack_states(priors, dim=1)
 
-    def training_step(
-        self, batch: list[Tensor], **_: dict[str, str]
-    ) -> dict[str, Tensor]:
+    def training_step(self, batch: DataGroup, **_: str) -> LossDict:
         """Rollout training step."""
-        loss_dict = self._shared_step(batch)
+        loss_dict = self.shared_step(batch)
         self.log_dict(loss_dict, prog_bar=True, sync_dist=True)
         return loss_dict
 
-    def validation_step(
-        self, batch: list[Tensor], _: int
-    ) -> dict[str, Tensor]:
+    def validation_step(self, batch: DataGroup, _: int) -> LossDict:
         """Rollout validation step."""
-        loss_dict = self._shared_step(batch)
+        loss_dict = self.shared_step(batch)
         loss_dict = {"val_" + k: v for k, v in loss_dict.items()}
         self.log_dict(loss_dict, prog_bar=True, sync_dist=True)
         return loss_dict
 
-    def _shared_step(self, batch: list[Tensor]) -> dict[str, Tensor]:
+    def shared_step(self, batch: DataGroup) -> LossDict:
         """Rollout common step for training and validation."""
         raise NotImplementedError
 
@@ -167,7 +109,11 @@ class RSSM(lightning.LightningModule):
         run = wandb.Api().artifact(reference)
         with tempfile.TemporaryDirectory() as tmpdir:
             ckpt = Path(run.download(root=tmpdir))
-            return cls.load_from_checkpoint(
+            model = cls.load_from_checkpoint(
                 checkpoint_path=ckpt / "model.ckpt",
                 map_location=torch.device("cpu"),
             )
+        if not isinstance(model, cls):
+            msg = f"Model is not an instance of {cls}"
+            raise TypeError(msg)
+        return model

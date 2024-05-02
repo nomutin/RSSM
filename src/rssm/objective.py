@@ -1,7 +1,7 @@
 """Loss functions."""
 
 import torch.distributions as td
-from torch import Tensor, nn
+from torch import Tensor
 
 
 def likelihood(
@@ -12,9 +12,5 @@ def likelihood(
 ) -> Tensor:
     """Compute the negative log-likelihood."""
     dist = td.Independent(td.Normal(prediction, scale), event_ndims)
-    return -dist.log_prob(target).mean()
-
-
-def mse(prediction: Tensor, target: Tensor, factor: float = 1.0) -> Tensor:
-    """Compute mean squared error."""
-    return nn.MSELoss()(prediction, target).mean().mul(factor)
+    log_prob: Tensor = dist.log_prob(target)  # type: ignore[no-untyped-call]
+    return -log_prob.mean()

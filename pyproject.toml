@@ -36,6 +36,7 @@ packages = ["src/rssm"]
 
 [tool.mypy]
 python_version = "3.10"
+ignore_missing_imports = true
 
 [tool.ruff]
 line-length = 79
