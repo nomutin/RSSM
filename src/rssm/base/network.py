@@ -2,7 +2,7 @@
 
 from torch import Tensor, nn
 
-from rssm.base.state import State
+from rssm.state import State
 
 
 class Representation(nn.Module):

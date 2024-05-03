@@ -9,8 +9,8 @@ from lightning import LightningModule
 from torch import Tensor, nn
 
 from rssm.base.network import Representation, Transition
-from rssm.base.state import State, stack_states
 from rssm.custom_types import DataGroup, LossDict
+from rssm.state import State, stack_states
 
 
 class RSSM(LightningModule):
@@ -106,7 +106,7 @@ class RSSM(LightningModule):
     @classmethod
     def load_from_wandb(cls, reference: str) -> "RSSM":
         """Load the model from wandb checkpoint."""
-        run = wandb.Api().artifact(reference)
+        run = wandb.Api().artifact(reference)  # type: ignore[no-untyped-call]
         with tempfile.TemporaryDirectory() as tmpdir:
             ckpt = Path(run.download(root=tmpdir))
             model = cls.load_from_checkpoint(

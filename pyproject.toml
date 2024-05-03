@@ -9,10 +9,10 @@ dependencies = [
     "einops>=0.7.0",
     "wandb>=0.16.4",
     "rich>=13.7.1",
-    "distribution-extension @ git+https://github.com/nomutin/distribution-extension.git",
     "matplotlib>=3.7.5",
     "gdown>=5.1.0",
     "torchrl>=0.3.1",
+    "distribution-extension @ git+https://github.com/nomutin/distribution-extension.git",
 ]
 readme = "README.md"
 requires-python = ">= 3.8"

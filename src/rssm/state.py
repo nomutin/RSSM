@@ -4,9 +4,10 @@ from collections.abc import Generator
 
 import torch
 from distribution_extension import Distribution
+from distribution_extension.utils import cat_distribution, stack_distribution
 from torch import Tensor
 
-Slice = slice | int | tuple[slice | int, ...]
+from rssm.custom_types import Slice
 
 
 class State:
@@ -60,11 +61,7 @@ def stack_states(states: list[State], dim: int) -> State:
     """Stack states along the given dimension."""
     deter = torch.stack([s.deter for s in states], dim=dim)
     stoch = torch.stack([s.stoch for s in states], dim=dim)
-    parameters = {}
-    for parameter_name in states[0].distribution.parameters:
-        params = [getattr(s.distribution, parameter_name) for s in states]
-        parameters[parameter_name] = torch.stack(params, dim=dim)
-    distribution = states[0].distribution.__class__(**parameters)
+    distribution = stack_distribution([s.distribution for s in states], dim)
     return State(
         deter=deter,
         stoch=stoch,
@@ -76,11 +73,7 @@ def cat_states(states: list[State], dim: int) -> State:
     """Concatenate states along the given dimension."""
     deter = torch.cat([s.deter for s in states], dim=dim)
     stoch = torch.cat([s.stoch for s in states], dim=dim)
-    parameters = {}
-    for parameter_name in states[0].distribution.parameters:
-        params = [getattr(s.distribution, parameter_name) for s in states]
-        parameters[parameter_name] = torch.cat(params, dim=dim)
-    distribution = states[0].distribution.__class__(**parameters)
+    distribution = cat_distribution([s.distribution for s in states], dim)
     return State(
         deter=deter,
         stoch=stoch,

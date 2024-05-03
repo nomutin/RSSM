@@ -1,11 +1,13 @@
+"""Continuous reccurent State Space Model(RSSM V1)."""
+
 import torch
 from distribution_extension import Normal, kl_divergence
-from torch import Tensor
 from torchrl.modules import ObsDecoder, ObsEncoder
 
 from rssm.base.module import RSSM
-from rssm.base.state import State, cat_states
+from rssm.custom_types import DataGroup, LossDict
 from rssm.objective import likelihood
+from rssm.state import State
 from rssm.v1.network import RepresentationV1, TransitionV1
 
 
@@ -59,10 +61,11 @@ class RSSMV1(RSSM):
         deter = torch.zeros([batch_size, self.deterministic_size])
         stoch = torch.zeros([batch_size, self.stochastic_size * 2])
         mean, std = torch.chunk(stoch, 2, dim=-1)
-        distribution = Normal(mean, std)
+        distribution = Normal(mean, std)  # type: ignore[no-untyped-call]
         return State(deter=deter, distribution=distribution).to(self.device)
 
-    def _shared_step(self, batch: list[Tensor]) -> dict[str, Tensor]:
+    def shared_step(self, batch: DataGroup) -> LossDict:
+        """Rollout common step for training and validation."""
         action_input, observation_input, _, observation_target = batch
         batch_size = action_input.shape[0]
         posterior, prior = self.rollout_representation(
@@ -90,35 +93,4 @@ class RSSMV1(RSSM):
             "kl": kl_div,
             "variance_max": posterior.distribution.variance.max().detach(),
             "variance_min": posterior.distribution.variance.min().detach(),
-        }
-
-    def imagination_step(
-        self,
-        batch: list[Tensor],
-        query_length: int,
-    ):
-        action_input, observation_input, _, observation_target = batch
-        batch_size = action_input.shape[0]
-        posterior, _ = self.rollout_representation(
-            actions=action_input,
-            observations=observation_input,
-            prev_state=self.initial_state(batch_size=batch_size),
-        )
-        posterior_reconstruction = self.decoder.forward(
-            state=posterior.stoch,
-            rnn_hidden=posterior.deter,
-        )
-        prior = self.rollout_transition(
-            actions=action_input[:, :query_length],
-            prev_state=posterior[:, -1],
-        )
-        prior = cat_states([posterior[:, :query_length], prior], dim=1)
-        prior_reconstruction = self.decoder.forward(
-            state=prior.stoch,
-            rnn_hidden=prior.deter,
-        )
-        return {
-            "posterior_reconstruction": posterior_reconstruction,
-            "prior_reconstruction": prior_reconstruction,
-            "observation_target": observation_target,
         }

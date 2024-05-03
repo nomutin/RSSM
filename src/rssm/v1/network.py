@@ -1,10 +1,12 @@
+"""Networks for RSSM V1."""
+
 import torch
 from distribution_extension import NormalFactory
 from torch import Tensor, nn
 from torchrl.modules import MLP
 
-from rssm.base.module import Representation, Transition
-from rssm.base.state import State
+from rssm.base.network import Representation, Transition
+from rssm.state import State
 
 
 class RepresentationV1(Representation):

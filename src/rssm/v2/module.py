@@ -1,11 +1,13 @@
+"""Discrete Reccurent State Space Model(RSSM V2)."""
+
 import torch
 from distribution_extension import MultiOneHotFactory, kl_divergence
-from torch import Tensor
 from torchrl.modules import ObsDecoder, ObsEncoder
 
 from rssm.base.module import RSSM
-from rssm.base.state import State
+from rssm.custom_types import DataGroup, LossDict
 from rssm.objective import likelihood
+from rssm.state import State
 from rssm.v2.network import RepresentationV2, TransitionV2
 
 
@@ -67,7 +69,8 @@ class RSSMV2(RSSM):
         distribution = self.distribution_factory.forward(stoch)
         return State(deter=deter, distribution=distribution).to(self.device)
 
-    def _shared_step(self, batch: list[Tensor]) -> dict[str, Tensor]:
+    def shared_step(self, batch: DataGroup) -> LossDict:
+        """Rollout common step for training and validation."""
         action_input, observation_input, _, observation_target = batch
         batch_size = action_input.shape[0]
         initial_state = self.initial_state(batch_size=batch_size)
