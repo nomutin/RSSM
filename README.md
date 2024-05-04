@@ -6,6 +6,15 @@
 
 Project for RSSM pre-training.
 
+## API
+
+```python
+from rssm import RSSMV1
+
+reference = "wandb reference"
+rssm = RSSMV1.load_from_wandb(reference=reference)
+```
+
 ## References
 
 ### Paper
@@ -20,12 +29,3 @@ Project for RSSM pre-training.
 - [danijar/dreamerv2](https://github.com/danijar/dreamerv2)
 - [julisforest/dreamer-pytorch](https://github.com/juliusfrost/dreamer-pytorch)
 - [pytorch/rl/dreamer](https://github.com/pytorch/rl/blob/main/examples/dreamer/dreamer.py)
-
-## API
-
-```python
-from rssm import RSSMV1
-
-reference = <wandb reference>
-rssm = RSSMV1.load_from_wandb(reference=reference)
-```

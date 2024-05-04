@@ -13,6 +13,7 @@ dependencies = [
     "gdown>=5.1.0",
     "torchrl>=0.3.1",
     "distribution-extension @ git+https://github.com/nomutin/distribution-extension.git",
+    "kornia>=0.7.2",
 ]
 readme = "README.md"
 requires-python = ">= 3.8"

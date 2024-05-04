@@ -55,11 +55,20 @@ class EpisodeDataset(Dataset[DataGroup]):
 def load_tensor(path: Path) -> Tensor:
     """`.npy`/`.pt`ファイルを読み込み, `torch.Tensor`に変換する."""
     if path.suffix == ".npy":
-        return Tensor(np.load(path))
+        return torch.from_numpy(np.load(path))
     if path.suffix == ".pt" and isinstance(tensor := torch.load(path), Tensor):
         return tensor
     msg = f"Unknown file extension: {path.suffix}"
     raise ValueError(msg)
+
+
+def split_train_validation(
+    path_list: list[Path],
+    train_ratio: float = 0.8,
+) -> tuple[list[Path], list[Path]]:
+    """Pathのリストを`train_ratio`で分割する."""
+    split_point = int(len(path_list) * train_ratio)
+    return path_list[:split_point], path_list[split_point:]
 
 
 class EpisodeDataModule(LightningDataModule):
@@ -86,22 +95,25 @@ class EpisodeDataModule(LightningDataModule):
         self.action_augmentation = action_augmentation
         self.observation_augmentation = observation_augmentation
 
-        self.path_to_train = Path("data") / data_name / "train"
-        self.path_to_val = Path("data") / data_name / "validation"
+        self.path_to_data = Path("data") / data_name
 
     def setup(self, stage: str = "train") -> None:  # noqa: ARG002
         """Set up train/val/test dataset."""
+        act_data_list = sorted(self.path_to_data.glob("act*.pt"))
+        obs_data_list = sorted(self.path_to_data.glob("obs*.pt"))
+        train_act_list, val_act_list = split_train_validation(act_data_list)
+        train_obs_list, val_obs_list = split_train_validation(obs_data_list)
         self.train_dataset = EpisodeDataset(
-            action_path_list=list(self.path_to_train.glob("act*.pt")),
-            observation_path_list=list(self.path_to_train.glob("obs*.pt")),
+            action_path_list=train_act_list,
+            observation_path_list=train_obs_list,
             action_transform=self.action_transform,
             observation_transform=self.observation_transform,
             action_augmentation=self.action_augmentation,
             observation_augmentation=self.observation_augmentation,
         )
         self.val_dataset = EpisodeDataset(
-            action_path_list=list(self.path_to_val.glob("act*.pt")),
-            observation_path_list=list(self.path_to_val.glob("obs*.pt")),
+            action_path_list=val_act_list,
+            observation_path_list=val_obs_list,
             action_transform=self.action_transform,
             observation_transform=self.observation_transform,
             action_augmentation=None,
