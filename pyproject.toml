@@ -4,16 +4,10 @@ version = "0.1.0"
 description = "Reccurent State-Space Model"
 dependencies = [
     "torch>=2.2.1",
-    "torchvision>=0.17.1",
     "lightning>=2.2.1",
-    "einops>=0.7.0",
     "wandb>=0.16.4",
-    "rich>=13.7.1",
-    "matplotlib>=3.7.5",
-    "gdown>=5.1.0",
     "torchrl>=0.3.1",
     "distribution-extension @ git+https://github.com/nomutin/distribution-extension.git",
-    "kornia>=0.7.2",
 ]
 readme = "README.md"
 requires-python = ">= 3.8"
@@ -27,6 +21,15 @@ managed = true
 dev-dependencies = [
     "mypy>=1.9.0",
     "ruff>=0.4.2",
+    "kornia>=0.7.2",
+    "imageio>=2.34.1",
+    "moviepy>=1.0.3",
+    "gdown>=5.1.0",
+    "matplotlib>=3.8.4",
+    "rich>=13.7.1",
+    "einops>=0.8.0",
+    "torchvision>=0.18.0",
+    "jsonargparse[signatures]>=4.27.7",
 ]
 
 [tool.hatch.metadata]
@@ -50,7 +53,7 @@ ignore = [
     "CPY001",  # missing-copyright-notice
     "ISC001",  # single-line-implicit-string-concatenation
     "COM812",  # missing-comma-in-multiline
-    "PLR0913",
+    "PLR0913", # too-many-arguments  
 ]
 fixable = ["ALL"]
 unfixable = []

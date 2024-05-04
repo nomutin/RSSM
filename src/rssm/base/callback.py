@@ -1,9 +1,8 @@
 # ruff: noqa: SLF001
 """Callbacks for RSSM."""
 
-from lightning import Callback, LightningModule, Trainer
+from lightning import Callback, LightningDataModule, LightningModule, Trainer
 from lightning.pytorch.loggers import WandbLogger
-from torch.utils.data import DataLoader
 
 from rssm.base.module import RSSM
 from rssm.custom_types import DataGroup
@@ -13,10 +12,11 @@ from rssm.utils.visualize import to_pca_wandb_image, to_wandb_movie
 
 def get_validation_data(trainer: Trainer) -> DataGroup:
     """Get **validation** data from trainer."""
-    loader = trainer.validate_loop._data_source.instance
-    if not isinstance(loader, DataLoader):
-        msg = "DataLoader not found."
+    data_module = trainer.validate_loop._data_source.instance
+    if not isinstance(data_module, LightningDataModule):
+        msg = "DataModule not found."
         raise TypeError(msg)
+    loader = data_module.val_dataloader()
     return next(iter(loader))  # type: ignore[no-any-return]
 
 
@@ -49,6 +49,7 @@ class LogRSSMOutput(Callback):
             return
 
         batch = get_validation_data(trainer)
+        batch = [tensor.to(rssm.device) for tensor in batch]
         action_input, observation_input, _, observation_target = batch
         posterior, _ = rssm.rollout_representation(
             actions=action_input[self.indices],
@@ -60,7 +61,7 @@ class LogRSSMOutput(Callback):
             rnn_hidden=posterior.deter,
         )
         prior = rssm.rollout_transition(
-            actions=action_input[:, : self.query_length],
+            actions=action_input[self.indices, : self.query_length],
             prev_state=posterior[:, -1],
         )
         prior = cat_states([posterior[:, : self.query_length], prior], dim=1)

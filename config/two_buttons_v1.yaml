@@ -1,13 +1,14 @@
 ---
 model:
   class_path: rssm.RSSMV1
-  deterministic_size: 64
-  stochastic_size: 16
-  hidden_size: 64
-  obs_embed_size: 32
-  action_size: 3
-  activation_name: ELU
-  kl_coeff: 0.1
+  init_args:
+    deterministic_size: 64
+    stochastic_size: 16
+    hidden_size: 64
+    obs_embed_size: 1024
+    action_size: 3
+    activation_name: ELU
+    kl_coeff: 0.1
 
 optimizer:
   class_path: torch.optim.AdamW
@@ -35,7 +36,7 @@ trainer:
       class_path: EarlyStopping
       init_args:
         monitor: val_loss
-        patience: 10
+        patience: 30
         mode: min
         verbose: True
     - 
@@ -44,13 +45,19 @@ trainer:
         monitor: val_loss
         mode: min
         save_top_k: 1
+    -
+      class_path: rssm.base.callback.LogRSSMOutput
+      init_args:
+        every_n_epochs: 30
+        indices: [0, 1, 2, 3, 4, 5, 6, 7]
+        query_length: 10
 
 data:
   class_path: rssm.dataset.EpisodeDataModule
   init_args:
     data_name: two_buttons
     batch_size: 16
-    num_workers: 1
+    num_workers: 4
     action_transform:
       class_path: torchvision.transforms.Compose
       init_args:
@@ -76,6 +83,9 @@ data:
           - class_path: einops.layers.torch.Rearrange
             init_args:
               pattern: B H W C -> B C H W
+          - class_path: torchvision.transforms.Resize
+            init_args:
+              size: [64, 64]
           - class_path: torchvision.transforms.Normalize
             init_args:
               mean: 0.0

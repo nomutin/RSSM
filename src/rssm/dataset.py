@@ -55,7 +55,7 @@ class EpisodeDataset(Dataset[DataGroup]):
 def load_tensor(path: Path) -> Tensor:
     """`.npy`/`.pt`ファイルを読み込み, `torch.Tensor`に変換する."""
     if path.suffix == ".npy":
-        return torch.from_numpy(np.load(path))
+        return torch.Tensor(np.load(path))
     if path.suffix == ".pt" and isinstance(tensor := torch.load(path), Tensor):
         return tensor
     msg = f"Unknown file extension: {path.suffix}"
@@ -99,8 +99,8 @@ class EpisodeDataModule(LightningDataModule):
 
     def setup(self, stage: str = "train") -> None:  # noqa: ARG002
         """Set up train/val/test dataset."""
-        act_data_list = sorted(self.path_to_data.glob("act*.pt"))
-        obs_data_list = sorted(self.path_to_data.glob("obs*.pt"))
+        act_data_list = sorted(self.path_to_data.glob("act*"))
+        obs_data_list = sorted(self.path_to_data.glob("obs*"))
         train_act_list, val_act_list = split_train_validation(act_data_list)
         train_obs_list, val_obs_list = split_train_validation(obs_data_list)
         self.train_dataset = EpisodeDataset(
@@ -127,6 +127,7 @@ class EpisodeDataModule(LightningDataModule):
             batch_size=self.batch_size,
             shuffle=True,
             num_workers=self.num_workers,
+            persistent_workers=True,
             prefetch_factor=1,
         )
 
@@ -137,5 +138,6 @@ class EpisodeDataModule(LightningDataModule):
             batch_size=self.batch_size,
             shuffle=False,
             num_workers=self.num_workers,
+            persistent_workers=True,
             prefetch_factor=1,
         )

@@ -22,7 +22,7 @@ class State:
         """Set parameters."""
         self.deter = deter
         self.distribution = distribution
-        self.stoch = stoch or distribution.rsample()
+        self.stoch = distribution.rsample() if stoch is None else stoch
         self.feature = torch.cat([self.deter, self.stoch], dim=-1)
 
     def __iter__(self) -> Generator["State", None, None]:
