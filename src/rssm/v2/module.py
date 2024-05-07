@@ -52,8 +52,8 @@ class RSSMV2(RSSM):
             category_size=category_size,
             activation_name=activation_name,
         )
-        self.encoder = ObsEncoder(num_layers=3)
-        self.decoder = ObsDecoder(num_layers=3)
+        self.encoder = ObsEncoder(num_layers=4, channels=8)
+        self.decoder = ObsDecoder(num_layers=4, channels=8)
         self.distribution_factory = MultiOneHotFactory(
             class_size=class_size,
             category_size=category_size,
@@ -92,7 +92,7 @@ class RSSMV2(RSSM):
             q=posterior.distribution.independent(1),
             p=prior.distribution.independent(1),
             use_balancing=False,
-        ).mul(self.kl_factor)
+        ).mul(self.kl_coeff)
         return {
             "loss": recon_loss + kl_div,
             "recon": recon_loss,

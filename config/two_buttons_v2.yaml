@@ -1,11 +1,12 @@
 ---
 model:
-  class_path: rssm.RSSMV1
+  class_path: rssm.RSSMV2
   init_args:
-    deterministic_size: 64
-    stochastic_size: 16
-    hidden_size: 64
-    obs_embed_size: 256
+    deterministic_size: 200
+    class_size: 16
+    category_size: 16
+    hidden_size: 200
+    obs_embed_size: 1024
     action_size: 3
     activation_name: ELU
     kl_coeff: 0.1

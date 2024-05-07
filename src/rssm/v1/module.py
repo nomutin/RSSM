@@ -50,8 +50,8 @@ class RSSMV1(RSSM):
             action_size=action_size,
             activation_name=activation_name,
         )
-        self.encoder = ObsEncoder(num_layers=4)
-        self.decoder = ObsDecoder(num_layers=4)
+        self.encoder = ObsEncoder(num_layers=4, channels=8)
+        self.decoder = ObsDecoder(num_layers=4, channels=8)
         self.deterministic_size = deterministic_size
         self.stochastic_size = stochastic_size
         self.kl_coeff = kl_coeff

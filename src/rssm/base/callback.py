@@ -7,7 +7,7 @@ from lightning.pytorch.loggers import WandbLogger
 from rssm.base.module import RSSM
 from rssm.custom_types import DataGroup
 from rssm.state import cat_states
-from rssm.utils.visualize import to_pca_wandb_image, to_wandb_movie
+from rssm.utils.visualize import to_wandb_movie
 
 
 def get_validation_data(trainer: Trainer) -> DataGroup:
@@ -49,11 +49,11 @@ class LogRSSMOutput(Callback):
             return
 
         batch = get_validation_data(trainer)
-        batch = [tensor.to(rssm.device) for tensor in batch]
+        batch = [tensor[self.indices].to(rssm.device) for tensor in batch]
         action_input, observation_input, _, observation_target = batch
         posterior, _ = rssm.rollout_representation(
-            actions=action_input[self.indices],
-            observations=observation_input[self.indices],
+            actions=action_input,
+            observations=observation_input,
             prev_state=rssm.initial_state(batch_size=len(self.indices)),
         )
         posterior_recon = rssm.decoder.forward(
@@ -61,7 +61,7 @@ class LogRSSMOutput(Callback):
             rnn_hidden=posterior.deter,
         )
         prior = rssm.rollout_transition(
-            actions=action_input[self.indices, : self.query_length],
+            actions=action_input[:, : self.query_length],
             prev_state=posterior[:, -1],
         )
         prior = cat_states([posterior[:, : self.query_length], prior], dim=1)
@@ -74,7 +74,5 @@ class LogRSSMOutput(Callback):
                 "observation": to_wandb_movie(observation_target),
                 "recon#posterior": to_wandb_movie(posterior_recon),
                 "recon#prior": to_wandb_movie(prior_recon),
-                "pca#deter": to_pca_wandb_image(posterior.deter, self.indices),
-                "pca#stoch": to_pca_wandb_image(posterior.stoch, self.indices),
             },
         )
