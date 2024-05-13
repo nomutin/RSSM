@@ -55,14 +55,17 @@ class RSSMV1(RSSM):
         self.encoder = Encoder(config=encoder_config)
         self.decoder = Decoder(config=decoder_config)
 
-        self.init_proj = nn.Linear(obs_embed_size, deterministic_size)
+        self.init_proj = nn.Sequential(
+            nn.Linear(obs_embed_size, deterministic_size),
+            nn.Tanh(),
+        )
         self.deterministic_size = deterministic_size
         self.stochastic_size = stochastic_size
         self.kl_coeff = kl_coeff
 
     def initial_state(self, observation: Tensor) -> State:
         """Generate initial state as zero matrix."""
-        obs_embed = self.encoder(observation).detach()
+        obs_embed = self.encoder(observation)
         deter = self.init_proj(obs_embed)
         stoch = self.transition.rnn_to_prior_projector(deter)
         distribution = self.representation.distribution_factory(stoch)

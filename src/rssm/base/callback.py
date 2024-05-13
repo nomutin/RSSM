@@ -28,12 +28,14 @@ class LogRSSMOutput(Callback):
         every_n_epochs: int,
         indices: list[int],
         query_length: int,
+        fps: float,
     ) -> None:
         """Set parameters and load dataloader."""
         super().__init__()
         self.every_n_epochs = every_n_epochs
         self.indices = indices
         self.query_length = query_length
+        self.fps = fps
 
     def on_validation_epoch_end(
         self,
@@ -57,23 +59,17 @@ class LogRSSMOutput(Callback):
             observations=observation_input,
             prev_state=rssm.initial_state(observation_input[:, 0]),
         )
-        posterior_recon = rssm.decoder.forward(
-            state=posterior.stoch,
-            rnn_hidden=posterior.deter,
-        )
+        posterior_recon = rssm.decoder.forward(posterior.feature)
         prior = rssm.rollout_transition(
-            actions=action_input[:, : self.query_length],
-            prev_state=posterior[:, -1],
+            actions=action_input[:, self.query_length:],
+            prev_state=posterior[:, self.query_length - 1],
         )
         prior = cat_states([posterior[:, : self.query_length], prior], dim=1)
-        prior_recon = rssm.decoder.forward(
-            state=prior.stoch,
-            rnn_hidden=prior.deter,
-        )
+        prior_recon = rssm.decoder.forward(prior.feature)
         logger.experiment.log(
             {
-                "observation": to_wandb_movie(observation_target),
-                "recon#posterior": to_wandb_movie(posterior_recon),
-                "recon#prior": to_wandb_movie(prior_recon),
+                "observation": to_wandb_movie(observation_target, self.fps),
+                "recon#posterior": to_wandb_movie(posterior_recon, self.fps),
+                "recon#prior": to_wandb_movie(prior_recon, self.fps),
             },
         )

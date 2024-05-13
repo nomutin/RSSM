@@ -106,14 +106,14 @@ class EpisodeDataModule(LightningDataModule):
 
         for act_path in sorted(self.path_to_data.glob("act*")):
             act = self.action_preprocess(load_tensor(act_path))
-            new_path = Path("tmp") / act_path.stem / ".pt"
-            torch.save(act, new_path)
+            new_path = Path("tmp") / f"{act_path.stem}.pt"
+            torch.save(act.clone(), new_path)
             act_path_list.append(new_path)
 
         for obs_path in sorted(self.path_to_data.glob("obs*")):
             obs = self.observation_preprocess(load_tensor(obs_path))
-            new_path = Path("tmp") / act_path.stem / ".pt"
-            torch.save(obs, new_path)
+            new_path = Path("tmp") / f"{obs_path.stem}.pt"
+            torch.save(obs.clone(), new_path)
             obs_path_list.append(new_path)
 
         train_act_list, val_act_list = split_train_validation(act_path_list)
