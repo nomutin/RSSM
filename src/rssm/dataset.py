@@ -1,7 +1,5 @@
 """Datamodule that reads local `.pt` files."""
 
-from __future__ import annotations
-
 from pathlib import Path
 
 import numpy as np
@@ -12,6 +10,25 @@ from torch.utils.data import DataLoader, Dataset
 from torchvision.transforms import Compose
 
 from rssm.custom_types import DataGroup
+
+
+def load_tensor(path: Path) -> Tensor:
+    """`.npy`/`.pt`ファイルを読み込み, `torch.Tensor`に変換する."""
+    if path.suffix == ".npy":
+        return torch.Tensor(np.load(path))
+    if path.suffix == ".pt" and isinstance(tensor := torch.load(path), Tensor):
+        return tensor
+    msg = f"Unknown file extension: {path.suffix}"
+    raise ValueError(msg)
+
+
+def split_train_validation(
+    path_list: list[Path],
+    train_ratio: float = 0.8,
+) -> tuple[list[Path], list[Path]]:
+    """Pathのリストを`train_ratio`で分割する."""
+    split_point = int(len(path_list) * train_ratio)
+    return path_list[:split_point], path_list[split_point:]
 
 
 class EpisodeDataset(Dataset[DataGroup]):
@@ -52,25 +69,6 @@ class EpisodeDataset(Dataset[DataGroup]):
         )
 
 
-def load_tensor(path: Path) -> Tensor:
-    """`.npy`/`.pt`ファイルを読み込み, `torch.Tensor`に変換する."""
-    if path.suffix == ".npy":
-        return torch.Tensor(np.load(path))
-    if path.suffix == ".pt" and isinstance(tensor := torch.load(path), Tensor):
-        return tensor
-    msg = f"Unknown file extension: {path.suffix}"
-    raise ValueError(msg)
-
-
-def split_train_validation(
-    path_list: list[Path],
-    train_ratio: float = 0.8,
-) -> tuple[list[Path], list[Path]]:
-    """Pathのリストを`train_ratio`で分割する."""
-    split_point = int(len(path_list) * train_ratio)
-    return path_list[:split_point], path_list[split_point:]
-
-
 class EpisodeDataModule(LightningDataModule):
     """DataModule with actions & observations."""
 
@@ -80,6 +78,8 @@ class EpisodeDataModule(LightningDataModule):
         data_name: str,
         batch_size: int,
         num_workers: int,
+        action_preprocess: Compose | None = None,
+        observation_preprocess: Compose | None = None,
         action_transform: Compose | None = None,
         observation_transform: Compose | None = None,
         action_augmentation: Compose | None = None,
@@ -90,6 +90,8 @@ class EpisodeDataModule(LightningDataModule):
         self.data_name = data_name
         self.batch_size = batch_size
         self.num_workers = num_workers
+        self.action_preprocess = action_preprocess or Compose([])
+        self.observation_preprocess = observation_preprocess or Compose([])
         self.action_transform = action_transform
         self.observation_transform = observation_transform
         self.action_augmentation = action_augmentation
@@ -99,10 +101,24 @@ class EpisodeDataModule(LightningDataModule):
 
     def setup(self, stage: str = "train") -> None:  # noqa: ARG002
         """Set up train/val/test dataset."""
-        act_data_list = sorted(self.path_to_data.glob("act*"))
-        obs_data_list = sorted(self.path_to_data.glob("obs*"))
-        train_act_list, val_act_list = split_train_validation(act_data_list)
-        train_obs_list, val_obs_list = split_train_validation(obs_data_list)
+        act_path_list = []
+        obs_path_list = []
+
+        for act_path in sorted(self.path_to_data.glob("act*")):
+            act = self.action_preprocess(load_tensor(act_path))
+            new_path = Path("tmp") / act_path.stem / ".pt"
+            torch.save(act, new_path)
+            act_path_list.append(new_path)
+
+        for obs_path in sorted(self.path_to_data.glob("obs*")):
+            obs = self.observation_preprocess(load_tensor(obs_path))
+            new_path = Path("tmp") / act_path.stem / ".pt"
+            torch.save(obs, new_path)
+            obs_path_list.append(new_path)
+
+        train_act_list, val_act_list = split_train_validation(act_path_list)
+        train_obs_list, val_obs_list = split_train_validation(obs_path_list)
+
         self.train_dataset = EpisodeDataset(
             action_path_list=train_act_list,
             observation_path_list=train_obs_list,

@@ -30,6 +30,8 @@ click==8.1.7
 cloudpickle==3.0.0
     # via tensordict
     # via torchrl
+cnn @ git+https://github.com/nomutin/CNN.git@b56a587c870852fe2edb8032fc54becee2d3664a
+    # via rssm
 contourpy==1.2.1
     # via matplotlib
 cycler==0.12.1
@@ -37,12 +39,14 @@ cycler==0.12.1
 decorator==4.4.2
     # via moviepy
 distribution-extension @ git+https://github.com/nomutin/distribution-extension.git@b71f2ffdf76e86e9af7726f546eee8ef0e3b35ae
+    # via cnn
     # via rssm
 docker-pycreds==0.4.0
     # via wandb
 docstring-parser==0.16
     # via jsonargparse
 einops==0.8.0
+    # via cnn
     # via distribution-extension
 filelock==3.14.0
     # via gdown
@@ -238,6 +242,7 @@ urllib3==2.2.1
     # via requests
     # via sentry-sdk
 wandb==0.16.6
+    # via cnn
     # via rssm
 yarl==1.9.4
     # via aiohttp

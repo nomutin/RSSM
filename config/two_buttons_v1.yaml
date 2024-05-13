@@ -5,7 +5,7 @@ model:
     deterministic_size: 64
     stochastic_size: 16
     hidden_size: 64
-    obs_embed_size: 256
+    obs_embed_size: 1024
     action_size: 3
     activation_name: ELU
     kl_coeff: 0.1
@@ -27,7 +27,7 @@ trainer:
     class_path: WandbLogger
     init_args:
       log_model: true
-      project: play-lmp-test
+      project: two_buttons_rssm
       save_dir: .venv
   callbacks:
     -
@@ -56,7 +56,7 @@ data:
   class_path: rssm.dataset.EpisodeDataModule
   init_args:
     data_name: two_buttons
-    batch_size: 16
+    batch_size: 8
     num_workers: 4
     action_transform:
       class_path: torchvision.transforms.Compose

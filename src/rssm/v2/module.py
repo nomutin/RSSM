@@ -1,8 +1,8 @@
 """Discrete Reccurent State Space Model(RSSM V2)."""
 
 import torch
+from cnn import Decoder, DecoderConfig, Encoder, EncoderConfig
 from distribution_extension import MultiOneHotFactory, kl_divergence
-from torchrl.modules import ObsDecoder, ObsEncoder
 
 from rssm.base.module import RSSM
 from rssm.custom_types import DataGroup, LossDict
@@ -13,7 +13,7 @@ from rssm.v2.network import RepresentationV2, TransitionV2
 
 class RSSMV2(RSSM):
     """
-    Categorical reccurent State Space Model(RSSM).
+    Categorical Reccurent State Space Model(RSSM).
 
     References
     ----------
@@ -31,6 +31,8 @@ class RSSMV2(RSSM):
         obs_embed_size: int,
         action_size: int,
         activation_name: str,
+        encoder_config: EncoderConfig,
+        decoder_config: DecoderConfig,
         kl_coeff: float,
     ) -> None:
         """Initialize RSSM components."""
@@ -52,8 +54,8 @@ class RSSMV2(RSSM):
             category_size=category_size,
             activation_name=activation_name,
         )
-        self.encoder = ObsEncoder(num_layers=4, channels=8)
-        self.decoder = ObsDecoder(num_layers=4, channels=8)
+        self.encoder = Encoder(config=encoder_config)
+        self.decoder = Decoder(config=decoder_config)
         self.distribution_factory = MultiOneHotFactory(
             class_size=class_size,
             category_size=category_size,
@@ -79,10 +81,7 @@ class RSSMV2(RSSM):
             observations=observation_input,
             prev_state=initial_state,
         )
-        reconstruction = self.decoder.forward(
-            state=posterior.stoch,
-            rnn_hidden=posterior.deter,
-        )
+        reconstruction = self.decoder.forward(posterior.feature)
         recon_loss = likelihood(
             prediction=reconstruction,
             target=observation_target,

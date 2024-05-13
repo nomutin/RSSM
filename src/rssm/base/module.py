@@ -32,7 +32,7 @@ class RSSM(LightningModule):
         self.encoder = nn.Module()
         self.decoder = nn.Module()
 
-    def initial_state(self, batch_size: int) -> State:
+    def initial_state(self, observation: Tensor) -> State:
         """Generate initial state as zero matrix."""
         raise NotImplementedError
 

@@ -1,8 +1,8 @@
 """Continuous reccurent State Space Model(RSSM V1)."""
 
-import torch
-from distribution_extension import Normal, kl_divergence
-from torchrl.modules import ObsDecoder, ObsEncoder
+from cnn import Decoder, DecoderConfig, Encoder, EncoderConfig
+from distribution_extension import kl_divergence
+from torch import Tensor, nn
 
 from rssm.base.module import RSSM
 from rssm.custom_types import DataGroup, LossDict
@@ -13,7 +13,7 @@ from rssm.v1.network import RepresentationV1, TransitionV1
 
 class RSSMV1(RSSM):
     """
-    Continuous reccurent State Space Model(RSSM).
+    Continuous Reccurent State Space Model(RSSM).
 
     References
     ----------
@@ -31,6 +31,8 @@ class RSSMV1(RSSM):
         obs_embed_size: int,
         action_size: int,
         activation_name: str,
+        encoder_config: EncoderConfig,
+        decoder_config: DecoderConfig,
         kl_coeff: float,
     ) -> None:
         """Initialize RSSM components."""
@@ -50,33 +52,31 @@ class RSSMV1(RSSM):
             action_size=action_size,
             activation_name=activation_name,
         )
-        self.encoder = ObsEncoder(num_layers=4, channels=8)
-        self.decoder = ObsDecoder(num_layers=4, channels=8)
+        self.encoder = Encoder(config=encoder_config)
+        self.decoder = Decoder(config=decoder_config)
+
+        self.init_proj = nn.Linear(obs_embed_size, deterministic_size)
         self.deterministic_size = deterministic_size
         self.stochastic_size = stochastic_size
         self.kl_coeff = kl_coeff
 
-    def initial_state(self, batch_size: int) -> State:
+    def initial_state(self, observation: Tensor) -> State:
         """Generate initial state as zero matrix."""
-        deter = torch.zeros([batch_size, self.deterministic_size])
-        stoch = torch.zeros([batch_size, self.stochastic_size * 2])
-        mean, std = torch.chunk(stoch, 2, dim=-1)
-        distribution = Normal(mean, std)  # type: ignore[no-untyped-call]
+        obs_embed = self.encoder(observation).detach()
+        deter = self.init_proj(obs_embed)
+        stoch = self.transition.rnn_to_prior_projector(deter)
+        distribution = self.representation.distribution_factory(stoch)
         return State(deter=deter, distribution=distribution).to(self.device)
 
     def shared_step(self, batch: DataGroup) -> LossDict:
         """Rollout common step for training and validation."""
         action_input, observation_input, _, observation_target = batch
-        batch_size = action_input.shape[0]
         posterior, prior = self.rollout_representation(
             actions=action_input,
             observations=observation_input,
-            prev_state=self.initial_state(batch_size=batch_size),
+            prev_state=self.initial_state(observation_input[:, 0]),
         )
-        reconstruction = self.decoder.forward(
-            state=posterior.stoch,
-            rnn_hidden=posterior.deter,
-        )
+        reconstruction = self.decoder.forward(posterior.feature)
         recon_loss = likelihood(
             prediction=reconstruction,
             target=observation_target,

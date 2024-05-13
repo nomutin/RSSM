@@ -8,6 +8,7 @@ dependencies = [
     "wandb>=0.16.4",
     "torchrl>=0.3.1",
     "distribution-extension @ git+https://github.com/nomutin/distribution-extension.git",
+    "cnn @ git+https://github.com/nomutin/CNN.git",
 ]
 readme = "README.md"
 requires-python = ">= 3.8"

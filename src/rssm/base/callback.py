@@ -49,12 +49,13 @@ class LogRSSMOutput(Callback):
             return
 
         batch = get_validation_data(trainer)
-        batch = [tensor[self.indices].to(rssm.device) for tensor in batch]
-        action_input, observation_input, _, observation_target = batch
+        action_input, observation_input, _, observation_target = (
+            tensor[self.indices].to(rssm.device) for tensor in batch
+        )
         posterior, _ = rssm.rollout_representation(
             actions=action_input,
             observations=observation_input,
-            prev_state=rssm.initial_state(batch_size=len(self.indices)),
+            prev_state=rssm.initial_state(observation_input[:, 0]),
         )
         posterior_recon = rssm.decoder.forward(
             state=posterior.stoch,
