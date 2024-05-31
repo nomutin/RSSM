@@ -1,130 +1,39 @@
 """Abstract classes for RSSM."""
 
-
-from __future__ import annotations
-
 import tempfile
-from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from pathlib import Path
 
-import lightning
 import torch
-from torch import nn, optim
-
 import wandb
+from lightning import LightningModule
+from torch import Tensor, nn
 
-if TYPE_CHECKING:
-    from torch import Tensor
-
-    from rssm.base.state import State
-
-
-@dataclass
-class RepresentationConfig:
-    """Parameters for RSSM Representation Model."""
-
-    obs_embed_size: int
-    deterministic_size: int
-    stochastic_size: int
-    hidden_size: int
-    activation_name: str
-    category_size: int = 0
-    class_size: int = 0
+from rssm.base.network import Representation, Transition
+from rssm.custom_types import DataGroup, LossDict
+from rssm.state import State, stack_states
 
 
-class Representation(nn.Module):
+class RSSM(LightningModule):
     """
-    RSSM Representation Model.
+    Abstract class for RSSM.
 
-    ```
-    stochastic = MLP(Transition.deterministic, obs_embed)
-    ```
+    Note:
+    ----
+    Inherited classes must implement:
+        - `initial_state()`
+        - `_shared_step()`
+
     """
 
     def __init__(self) -> None:
-        """Initialize components for type hinting."""
-        super().__init__()
-        self.rnn_to_post_projector = nn.Module()
-        self.distribution_factory = nn.Module()
-
-    def forward(self, obs_embed: Tensor, prior_state: State) -> State:
-        """Single step transition, includes prior transition."""
-        raise NotImplementedError
-
-
-@dataclass
-class TransitionConfig:
-    """Parameters for RSSM Transition Model."""
-
-    deterministic_size: int
-    stochastic_size: int
-    hidden_size: int
-    action_size: int
-    activation_name: str
-    category_size: int = 0
-    class_size: int = 0
-
-
-class Transition(nn.Module):
-    """
-    RSSM Transition Model.
-
-    ```
-    deterministic = GRU(prev_action, prev_deterministic, prev_stochastic)
-    stochastic = MLP(deterministic)
-    ```
-    """
-
-    def __init__(self) -> None:
-        """Initialize components for type hinting."""
-        super().__init__()
-        self.rnn_cell = nn.Module()
-        self.action_state_projector = nn.Module()
-        self.rnn_to_prior_projector = nn.Module()
-        self.distribution_factory = nn.Module()
-
-    def forward(self, action: Tensor, prev_state: State) -> State:
-        """
-        Single step transition, includes deterministic transitions by GRUs.
-
-        Parameters
-        ----------
-        action : Tensor
-            (Prev) aciton of agent or robot. Shape: (batch_size, action_size)
-        prev_state : State
-            Previous state. Shape: (batch_size, action_size)
-
-        Returns
-        -------
-        State
-            Prior state.
-        """
-        raise NotImplementedError
-
-
-class RSSM(lightning.LightningModule):
-    """Abstract class for RSSM."""
-
-    def __init__(self) -> None:
-        """Initialize components for type hinting."""
         super().__init__()
         self.representation = Representation()
         self.transition = Transition()
+        self.encoder = nn.Module()
+        self.decoder = nn.Module()
 
-    def initial_state(self, batch_size: int) -> State:
+    def initial_state(self, observation: Tensor) -> State:
         """Generate initial state as zero matrix."""
-        raise NotImplementedError
-
-    def configure_optimizers(self) -> optim.Optimizer:
-        """Choose what optimizers to use."""
-        return optim.AdamW(self.parameters(), lr=1e-3)
-
-    def encode(self, observations: Tensor) -> Tensor:
-        """Encode observations into embed tensor."""
-        raise NotImplementedError
-
-    def decode(self, state: State) -> Tensor:
-        """Decode state into observations."""
         raise NotImplementedError
 
     def rollout_representation(
@@ -134,58 +43,77 @@ class RSSM(lightning.LightningModule):
         prev_state: State,
     ) -> tuple[State, State]:
         """
-        Rollout posterior roop.
+        Rollout representation (posterior loop).
 
         Parameters
         ----------
         actions : Tensor
-            Action sequence. Shape: (batch_size, seq_len, action_size)
+            3D Tensor [batch_size, seq_len, action_size].
         observations : Tensor
-            Observation sequence. Shape: (batch_size, seq_len, obs_size)
+            5D Tensor [batch_size, seq_len, channel, height, width].
         prev_state : State
-            Previous state. Shape: (batch_size, feature_size)
-        """
-        raise NotImplementedError
+            2D Parameters [batch_size, state_size].
 
-    def rollout_transition(
-        self,
-        actions: Tensor,
-        prev_state: State,
-    ) -> State:
         """
-        Rollout prior loop.
+        obs_embed = self.encoder.forward(observations)
+        priors, posteriors = [], []
+        for t in range(observations.shape[1]):
+            prior = self.transition.forward(actions[:, t], prev_state)
+            posterior = self.representation.forward(obs_embed[:, t], prior)
+            priors.append(prior)
+            posteriors.append(posterior)
+            prev_state = posterior
+
+        prior = stack_states(priors, dim=1)
+        posterior = stack_states(posteriors, dim=1)
+        return posterior, prior
+
+    def rollout_transition(self, actions: Tensor, prev_state: State) -> State:
+        """
+        Rollout transition (prior loop) aka latent imagination.
 
         Parameters
         ----------
         actions : Tensor
-            Action sequence. Shape: (batch_size, seq_len, action_size)
+            3D Tensor [batch_size, seq_len, action_size].
         prev_state : State
-            Previous state. Shape: (batch_size, feature_size)
-        """
-        raise NotImplementedError
+            2D Parameters [batch_size, state_size].
 
-    def training_step(self, batch: list, **_: dict) -> dict[str, Tensor]:
+        """
+        priors = []
+        for t in range(actions.shape[1]):
+            prev_state = self.transition.forward(actions[:, t], prev_state)
+            priors.append(prev_state)
+        return stack_states(priors, dim=1)
+
+    def training_step(self, batch: DataGroup, **_: str) -> LossDict:
         """Rollout training step."""
-        loss_dict = self._shared_step(batch)
+        loss_dict = self.shared_step(batch)
         self.log_dict(loss_dict, prog_bar=True, sync_dist=True)
         return loss_dict
 
-    def validation_step(self, batch: list, _: int) -> dict[str, Tensor]:
+    def validation_step(self, batch: DataGroup, _: int) -> LossDict:
         """Rollout validation step."""
-        loss_dict = self._shared_step(batch)
+        loss_dict = self.shared_step(batch)
         loss_dict = {"val_" + k: v for k, v in loss_dict.items()}
         self.log_dict(loss_dict, prog_bar=True, sync_dist=True)
         return loss_dict
 
-    def _shared_step(self, batch: list[Tensor]) -> dict[str, Tensor]:
+    def shared_step(self, batch: DataGroup) -> LossDict:
         """Rollout common step for training and validation."""
         raise NotImplementedError
 
     @classmethod
-    def load_from_wandb(cls, reference: str) -> RSSM:
+    def load_from_wandb(cls, reference: str) -> "RSSM":
         """Load the model from wandb checkpoint."""
-        run = wandb.Api().run(reference)
+        run = wandb.Api().artifact(reference)  # type: ignore[no-untyped-call]
         with tempfile.TemporaryDirectory() as tmpdir:
-            ckpt_name, cpu = "best_model.ckpt", torch.device("cpu")
-            ckpt = run.file(ckpt_name).download(replace=True, root=tmpdir)
-            return cls.load_from_checkpoint(ckpt.name, map_location=cpu)
+            ckpt = Path(run.download(root=tmpdir))
+            model = cls.load_from_checkpoint(
+                checkpoint_path=ckpt / "model.ckpt",
+                map_location=torch.device("cpu"),
+            )
+        if not isinstance(model, cls):
+            msg = f"Model is not an instance of {cls}"
+            raise TypeError(msg)
+        return model

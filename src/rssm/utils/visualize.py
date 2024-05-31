@@ -1,13 +1,10 @@
 """Data visualization utilities."""
 
-from __future__ import annotations
-
 import matplotlib.pyplot as plt
 import torch
 from einops import pack, unpack
 from matplotlib import figure
 from torch import Tensor, uint8
-
 from wandb import Image, Video
 
 
@@ -40,6 +37,7 @@ def pca(data: Tensor, n_components: int = 2) -> tuple[Tensor, Tensor]:
         PCA-transformed data. Tensor shaped [batch*, n_components].
     Tensor
         Explained variance ratio. Tensor shaped [n_components].
+
     """
     data, ps = pack([data], "* d")
     _, s, v = torch.pca_lowrank(data, q=n_components)
@@ -68,7 +66,7 @@ def to_pca_wandb_image(tensor: Tensor, indices: list[int]) -> Image:
     return Image(fig)
 
 
-def to_wandb_movie(tensor: Tensor) -> Video:
+def to_wandb_movie(tensor: Tensor, fps: float) -> Video:
     """Convert image tensor to wandb video."""
     tensor = tensor.detach().cpu().mul(255)
-    return Video(tensor.to(dtype=uint8))  # type: ignore
+    return Video(tensor.to(dtype=uint8), fps=fps)  # type: ignore[arg-type]

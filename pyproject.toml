@@ -1,13 +1,14 @@
 [project]
 name = "rssm"
 version = "0.1.0"
-description = "Reccurent State Space Model"
+description = "Reccurent State-Space Model"
 dependencies = [
-    "einops>=0.7.0",
-    "hydra-core>=1.3.2",
-    "wandb>=0.16.1",
+    "torch>=2.2.1",
+    "lightning>=2.2.1",
+    "wandb>=0.16.4",
+    "torchrl>=0.3.1",
+    "distribution-extension @ git+https://github.com/nomutin/distribution-extension.git",
     "cnn @ git+https://github.com/nomutin/CNN.git",
-    "distribution_extention @ git+https://github.com/nomutin/distribution-extention.git",
 ]
 readme = "README.md"
 requires-python = ">= 3.8"
@@ -19,83 +20,52 @@ build-backend = "hatchling.build"
 [tool.rye]
 managed = true
 dev-dependencies = [
-    "isort>=5.13.2",
-    "ruff>=0.1.8",
-    "pytest-cov>=4.1.0",
-    "black>=23.12.0",
-    "mypy>=1.7.1",
-    "imageio>=2.33.1",
+    "mypy>=1.9.0",
+    "ruff>=0.4.2",
+    "kornia>=0.7.2",
+    "imageio>=2.34.1",
     "moviepy>=1.0.3",
-    "rich>=13.7.0",
-    "gdown>=4.7.1",
-    "matplotlib>=3.7.4",
-    "torch==2.0.1+cu117",
-    "torchvision==0.15.2+cu117",
-    "lightning>=2.1.3",
-    "tsaug @ git+https://github.com/nomutin/tsaug.git",
+    "gdown>=5.1.0",
+    "matplotlib>=3.8.4",
+    "rich>=13.7.1",
+    "einops>=0.8.0",
+    "torchvision>=0.18.0",
+    "jsonargparse[signatures]>=4.27.7",
 ]
 
 [tool.hatch.metadata]
 allow-direct-references = true
 
-[[tool.rye.sources]]
-name = "torch"
-url = "https://download.pytorch.org/whl/cu117"
-type = "index"
-
-[tool.black]
-line-length = 79
-
-[tool.pytest.ini_options]
-filterwarnings = [
-    "ignore::UserWarning",
-    "ignore::DeprecationWarning",
-    'ignore:distutils Version classes are deprecated.:DeprecationWarning',
-]
+[tool.hatch.build.targets.wheel]
+packages = ["src/rssm"]
 
 [tool.mypy]
-python_version = 3.8
-# following setting is same as pysen
-# https://github.com/pfnet/pysen/blob/main/setup.cfg#L12
-check_untyped_defs = true            # 型注釈がない関数やメソッドに対して型チェックを行う
-disallow_any_decorated = false 
-disallow_any_generics = false
-disallow_any_unimported = false
-disallow_incomplete_defs = true      # 型注釈の一部が欠けている関数やメソッドの定義を禁止
-disallow_subclassing_any = true
-disallow_untyped_decorators = true   # 型注釈がないデコレータの使用を禁止
-disallow_untyped_defs = true         # 型注釈がない関数やメソッドの定義を禁止
-ignore_errors = false                # エラーを無視
-ignore_missing_imports = true        # 型チェック対象外のモジュールを無視
-no_implicit_optional = true          # 暗黙のOptionalを禁止
-show_error_codes = true              # エラーコードを表示
-strict_equality = true               # 異なる型同士の比較を禁止
-strict_optional = true               # Noneと他の型の混在を許容しない
-warn_redundant_casts = true          # 不要な型変換に警告
-warn_unreachable = true              # 到達不能なコードに警告
-warn_unused_configs = true           # 使用されていないconfigオプションに警告
-warn_unused_ignores = true           # 使用されていない`# type: ignore`コメントに警告
-disallow_untyped_calls = false       # 型注釈がない関数やメソッドの呼び出しを禁止
-warn_return_any = false              # `Any`型を返す関数やメソッドに警告
+python_version = "3.10"
+ignore_missing_imports = true
 
 [tool.ruff]
+line-length = 79
+target-version = "py310"
+
+[tool.ruff.lint]
+preview = true
 select = ["ALL"]
 ignore = [
-    "D203",    # one-blank-line-before-class
-    "D212",    # multi-line-summary-first-line
-    "S101",    # Use of assert detected
-    "ANN101",  # Missing type annotation for self in method
-    "ANN102",  # Missing type annotation for cls in classmethod
-    "PGH003",  # Use specific rule codes when ignoring type issues
-    "I001",    # Import block is un-sorted or un-formatted
+    "CPY001",  # missing-copyright-notice
+    "ISC001",  # single-line-implicit-string-concatenation
+    "COM812",  # missing-comma-in-multiline
+    "PLR0913", # too-many-arguments  
 ]
 fixable = ["ALL"]
 unfixable = []
 exclude = [".git", ".ruff_cache", ".venv",]
-line-length = 79
 dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
-target-version = "py38"
 
-[tool.isort]
-profile = "black"
-line_length = 79
+[tool.ruff.format]
+preview = true
+
+[tool.ruff.lint.isort]
+known-first-party = ["rssm"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "numpy"
