@@ -1,14 +1,35 @@
 ---
+seed_everything: 42
+
 model:
   class_path: rssm.RSSMV2
   init_args:
-    deterministic_size: 200
+    deterministic_size: 600
     class_size: 16
     category_size: 16
-    hidden_size: 200
-    obs_embed_size: 1024
+    hidden_size: 600
+    obs_embed_size: 512
     action_size: 3
     activation_name: ELU
+    encoder_config:
+      linear_sizes: [512,]
+      activation_name: ELU
+      out_activation_name: Identity
+      channels: [16, 32, 64]
+      kernel_sizes: [3, 3, 3]
+      strides: [2, 2, 2]
+      paddings: [1, 1, 1]
+      observation_shape: [3, 64, 64]
+    decoder_config:
+      linear_sizes: [856, ]
+      activation_name: ELU
+      out_activation_name: Sigmoid
+      channels: [64, 32, 16, 3]
+      kernel_sizes: [4, 4, 4]
+      strides: [2, 2, 2]
+      paddings: [1, 1, 1]
+      output_paddings: [0, 0, 0]
+      observation_shape: [3, 64, 64]
     kl_coeff: 0.1
 
 optimizer:
@@ -28,7 +49,7 @@ trainer:
     class_path: WandbLogger
     init_args:
       log_model: true
-      project: play-lmp-test
+      project: two_buttons_rssm
       save_dir: .venv
   callbacks:
     -
@@ -37,7 +58,7 @@ trainer:
       class_path: EarlyStopping
       init_args:
         monitor: val_loss
-        patience: 30
+        patience: 50
         mode: min
         verbose: True
     - 
@@ -52,6 +73,7 @@ trainer:
         every_n_epochs: 30
         indices: [0, 1, 2, 3, 4, 5, 6, 7]
         query_length: 10
+        fps: 20
 
 data:
   class_path: rssm.dataset.EpisodeDataModule
@@ -59,13 +81,11 @@ data:
     data_name: two_buttons
     batch_size: 16
     num_workers: 4
-    action_transform:
+
+    action_preprocess:
       class_path: torchvision.transforms.Compose
       init_args:
         transforms:
-          - class_path: rssm.transform.RandomWindow
-            init_args:
-              window_size: 64
           - class_path: rssm.transform.RemoveDim
             init_args:
               axis: -1
@@ -74,13 +94,11 @@ data:
             init_args:
               mean: [2026.5, 1996.0, 2180.5]
               std: [478.5, 373.0, 314.5]
-    observation_transform:
+
+    observation_preprocess:
       class_path: torchvision.transforms.Compose
       init_args:
         transforms:
-          - class_path: rssm.transform.RandomWindow
-            init_args:
-              window_size: 64
           - class_path: einops.layers.torch.Rearrange
             init_args:
               pattern: B H W C -> B C H W
@@ -91,26 +109,44 @@ data:
             init_args:
               mean: 0.0
               std: 255.0
-    # observation_augmentation:
-    #   class_path: torchvision.transforms.Compose
-    #   init_args:
-    #     transforms:
-    #       - class_path: kornia.augmentation.RandomGaussianNoise
-    #         init_args:
-    #           p: 0.5
-    #           mean: 0.0
-    #           std: 0.1
-    #       - class_path: kornia.augmentation.ColorJitter
-    #         init_args:
-    #           p: 0.3
-    #           brightness: 0.1
-    #           contrast: 0.1
-    #           saturation: 0.1
-    #           hue: 0.1
-    #       - class_path: kornia.augmentation.RandomBoxBlur
-    #         init_args:
-    #           p: 0.3
-    #           kernel_size: [3, 3]
-    #       - class_path: kornia.augmentation.RandomErasing
-    #         init_args:
-    #           p: 0.3
+
+    action_transform:
+      class_path: torchvision.transforms.Compose
+      init_args:
+        transforms:
+          - class_path: rssm.transform.RandomWindow
+            init_args:
+              window_size: 128
+
+    observation_transform:
+      class_path: torchvision.transforms.Compose
+      init_args:
+        transforms:
+          - class_path: rssm.transform.RandomWindow
+            init_args:
+              window_size: 128
+
+
+    observation_augmentation:
+      class_path: torchvision.transforms.Compose
+      init_args:
+        transforms:
+          - class_path: kornia.augmentation.RandomGaussianNoise
+            init_args:
+              p: 0.5
+              mean: 0.0
+              std: 0.1
+          - class_path: kornia.augmentation.ColorJitter
+            init_args:
+              p: 0.3
+              brightness: 0.1
+              contrast: 0.1
+              saturation: 0.1
+              hue: 0.1
+          - class_path: kornia.augmentation.RandomBoxBlur
+            init_args:
+              p: 0.3
+              kernel_size: [3, 3]
+          - class_path: kornia.augmentation.RandomErasing
+            init_args:
+              p: 0.3

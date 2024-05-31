@@ -61,7 +61,7 @@ class LogRSSMOutput(Callback):
         )
         posterior_recon = rssm.decoder.forward(posterior.feature)
         prior = rssm.rollout_transition(
-            actions=action_input[:, self.query_length:],
+            actions=action_input[:, self.query_length :],
             prev_state=posterior[:, self.query_length - 1],
         )
         prior = cat_states([posterior[:, : self.query_length], prior], dim=1)

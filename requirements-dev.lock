@@ -30,7 +30,7 @@ click==8.1.7
 cloudpickle==3.0.0
     # via tensordict
     # via torchrl
-cnn @ git+https://github.com/nomutin/CNN.git@b56a587c870852fe2edb8032fc54becee2d3664a
+cnn @ git+https://github.com/nomutin/CNN.git@5be2e1438211eb4af956fc0d659a2b1bf8716ff5
     # via rssm
 contourpy==1.2.1
     # via matplotlib
