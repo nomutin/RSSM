@@ -1,6 +1,6 @@
 """Discrete Reccurent State Space Model(RSSM V2)."""
 
-from cnn import Decoder, DecoderConfig, Encoder, EncoderConfig
+from cnn import DecoderConfig, Encoder, EncoderConfig, ResNetDecoder
 from distribution_extension import MultiOneHotFactory, kl_divergence
 from torch import Tensor, nn
 
@@ -55,7 +55,7 @@ class RSSMV2(RSSM):
             activation_name=activation_name,
         )
         self.encoder = Encoder(config=encoder_config)
-        self.decoder = Decoder(config=decoder_config)
+        self.decoder = ResNetDecoder(config=decoder_config)
         self.distribution_factory = MultiOneHotFactory(
             class_size=class_size,
             category_size=category_size,

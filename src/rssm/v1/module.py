@@ -1,6 +1,7 @@
 """Continuous reccurent State Space Model(RSSM V1)."""
 
-from cnn import Decoder, DecoderConfig, Encoder, EncoderConfig
+from cnn import DecoderConfig, Encoder, EncoderConfig
+from cnn.resnet import ResNetDecoder
 from distribution_extension import kl_divergence
 from torch import Tensor, nn
 
@@ -53,7 +54,7 @@ class RSSMV1(RSSM):
             activation_name=activation_name,
         )
         self.encoder = Encoder(config=encoder_config)
-        self.decoder = Decoder(config=decoder_config)
+        self.decoder = ResNetDecoder(config=decoder_config)
 
         self.init_proj = nn.Linear(obs_embed_size, deterministic_size)
 
