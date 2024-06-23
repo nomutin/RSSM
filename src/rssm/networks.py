@@ -7,6 +7,15 @@ from torchrl.modules import MLP
 
 from rssm.state import State
 
+__all__ = [
+    "Representation",
+    "RepresentationV1",
+    "RepresentationV2",
+    "Transition",
+    "TransitionV1",
+    "TransitionV2",
+]
+
 
 class RepresentationV1(nn.Module):
     """
