@@ -68,8 +68,7 @@ known-first-party = ["rssm"]
 
 [tool.ruff.lint.per-file-ignores]
 "src/rssm/core.py" = ["PLR0913"]
-"src/rssm/networks/v1.py" = ["PLR0913"]
-"src/rssm/networks/v2.py" = ["PLR0913"]
+"src/rssm/networks.py" = ["PLR0913"]
 "src/rssm/dataset.py" = ["PLR0913"]
 "src/rssm/callback.py" = ["SLF001"]
 

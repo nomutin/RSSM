@@ -10,7 +10,7 @@ from lightning import LightningModule
 from torch import Tensor, nn
 
 from rssm.custom_types import DataGroup, LossDict
-from rssm.networks.base import Representation, Transition
+from rssm.networks import Representation, Transition
 from rssm.objective import likelihood
 from rssm.state import State, stack_states
 
