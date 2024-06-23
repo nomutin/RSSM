@@ -1,17 +1,17 @@
-"""Representation model for RSSM V2."""
+"""Networks for RSSM V1."""
 
 import torch
-from distribution_extension import MultiOneHotFactory
+from distribution_extension import NormalFactory
 from torch import Tensor, nn
 from torchrl.modules import MLP
 
-from rssm.base.network import Representation, Transition
+from rssm.networks.base import Representation, Transition
 from rssm.state import State
 
 
-class RepresentationV2(Representation):
+class RepresentationV1(Representation):
     """
-    Representation model for RSSM V2.
+    Representation model for RSSM V1.
 
     ```
     stochastic = MLP(Transition.deterministic, obs_embed)
@@ -22,10 +22,9 @@ class RepresentationV2(Representation):
         self,
         *,
         deterministic_size: int,
+        stochastic_size: int,
         hidden_size: int,
         obs_embed_size: int,
-        class_size: int,
-        category_size: int,
         activation_name: str,
     ) -> None:
         """Set components."""
@@ -33,16 +32,12 @@ class RepresentationV2(Representation):
 
         self.rnn_to_post_projector = MLP(
             in_features=obs_embed_size + deterministic_size,
-            out_features=class_size * category_size,
+            out_features=stochastic_size * 2,
             num_cells=hidden_size,
             depth=1,
             activation_class=getattr(torch.nn, activation_name),
-            activate_last_layer=False,
         )
-        self.distribution_factory = MultiOneHotFactory(
-            class_size=class_size,
-            category_size=category_size,
-        )
+        self.distribution_factory = NormalFactory()
 
     def forward(self, obs_embed: Tensor, prior_state: State) -> State:
         """
@@ -67,9 +62,9 @@ class RepresentationV2(Representation):
         return State(deter=prior_state.deter, distribution=distribution)
 
 
-class TransitionV2(Transition):
+class TransitionV1(Transition):
     """
-    RSSM V2 Transition Model.
+    RSSM V1 Transition Model.
 
     ```
     deterministic = GRU(prev_action, prev_deterministic, prev_stochastic)
@@ -81,13 +76,11 @@ class TransitionV2(Transition):
         self,
         *,
         deterministic_size: int,
+        stochastic_size: int,
         hidden_size: int,
         action_size: int,
-        class_size: int,
-        category_size: int,
         activation_name: str,
     ) -> None:
-        """Set components."""
         super().__init__()
 
         self.rnn_cell = nn.GRUCell(
@@ -95,7 +88,7 @@ class TransitionV2(Transition):
             hidden_size=deterministic_size,
         )
         self.action_state_projector = MLP(
-            in_features=action_size + class_size * category_size,
+            in_features=action_size + stochastic_size,
             out_features=hidden_size,
             num_cells=hidden_size,
             depth=1,
@@ -104,16 +97,13 @@ class TransitionV2(Transition):
         )
         self.rnn_to_prior_projector = MLP(
             in_features=deterministic_size,
-            out_features=class_size * category_size,
+            out_features=stochastic_size * 2,
             num_cells=hidden_size,
             depth=1,
             activation_class=getattr(torch.nn, activation_name),
             activate_last_layer=False,
         )
-        self.distribution_factory = MultiOneHotFactory(
-            class_size=class_size,
-            category_size=category_size,
-        )
+        self.distribution_factory = NormalFactory()
 
     def forward(self, action: Tensor, prev_state: State) -> State:
         """

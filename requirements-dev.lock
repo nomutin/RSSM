@@ -31,8 +31,7 @@ click==8.1.7
 cloudpickle==3.0.0
     # via tensordict
     # via torchrl
-cnn @ git+https://github.com/nomutin/CNN.git@589f47eb1f269de4532d25686b6fe2ea880711d3
-    # via rssm
+cnn @ git+https://github.com/nomutin/CNN@589f47eb1f269de4532d25686b6fe2ea880711d3
 contourpy==1.2.1
     # via matplotlib
 cycler==0.12.1
@@ -214,7 +213,7 @@ sympy==1.12
     # via torch
 tensordict==0.4.0
     # via torchrl
-timm==1.0.3
+timm==1.0.7
     # via cnn
 tomli==2.0.1
     # via mypy
