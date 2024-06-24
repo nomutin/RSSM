@@ -6,6 +6,7 @@
 #   features: []
 #   all-features: false
 #   with-sources: false
+#   generate-hashes: false
 
 -e file:.
 aiohttp==3.9.5
@@ -30,16 +31,14 @@ click==8.1.7
 cloudpickle==3.0.0
     # via tensordict
     # via torchrl
-cnn @ git+https://github.com/nomutin/CNN.git@5be2e1438211eb4af956fc0d659a2b1bf8716ff5
-    # via rssm
+cnn @ git+https://github.com/nomutin/CNN@589f47eb1f269de4532d25686b6fe2ea880711d3
 contourpy==1.2.1
     # via matplotlib
 cycler==0.12.1
     # via matplotlib
 decorator==4.4.2
     # via moviepy
-distribution-extension @ git+https://github.com/nomutin/distribution-extension.git@b71f2ffdf76e86e9af7726f546eee8ef0e3b35ae
-    # via cnn
+distribution-extension @ git+https://github.com/nomutin/distribution-extension.git@0b5c0cdf5bd19f6f21e373b24d5139deffe93c98
     # via rssm
 docker-pycreds==0.4.0
     # via wandb
@@ -50,6 +49,7 @@ einops==0.8.0
     # via distribution-extension
 filelock==3.14.0
     # via gdown
+    # via huggingface-hub
     # via torch
     # via triton
 fonttools==4.51.0
@@ -58,6 +58,7 @@ frozenlist==1.4.1
     # via aiohttp
     # via aiosignal
 fsspec==2024.3.1
+    # via huggingface-hub
     # via lightning
     # via pytorch-lightning
     # via torch
@@ -66,6 +67,8 @@ gitdb==4.0.11
     # via gitpython
 gitpython==3.1.43
     # via wandb
+huggingface-hub==0.23.4
+    # via timm
 idna==3.7
     # via requests
     # via yarl
@@ -147,6 +150,7 @@ nvidia-nvjitlink-cu12==12.4.127
 nvidia-nvtx-cu12==12.1.105
     # via torch
 packaging==24.0
+    # via huggingface-hub
     # via kornia
     # via lightning
     # via lightning-utilities
@@ -175,16 +179,21 @@ python-dateutil==2.9.0.post0
 pytorch-lightning==2.2.3
     # via lightning
 pyyaml==6.0.1
+    # via huggingface-hub
     # via jsonargparse
     # via lightning
     # via pytorch-lightning
+    # via timm
     # via wandb
 requests==2.31.0
     # via gdown
+    # via huggingface-hub
     # via moviepy
     # via wandb
 rich==13.7.1
 ruff==0.4.2
+safetensors==0.4.3
+    # via timm
 sentry-sdk==2.0.1
     # via wandb
 setproctitle==1.3.3
@@ -204,25 +213,33 @@ sympy==1.12
     # via torch
 tensordict==0.4.0
     # via torchrl
+timm==1.0.7
+    # via cnn
 tomli==2.0.1
     # via mypy
 torch==2.3.0
+    # via cnn
     # via kornia
     # via lightning
     # via pytorch-lightning
-    # via rssm
     # via tensordict
+    # via timm
+    # via torchgeometry
     # via torchmetrics
     # via torchrl
     # via torchvision
+torchgeometry==0.1.2
+    # via cnn
 torchmetrics==1.3.2
     # via lightning
     # via pytorch-lightning
 torchrl==0.4.0
     # via rssm
 torchvision==0.18.0
+    # via timm
 tqdm==4.66.2
     # via gdown
+    # via huggingface-hub
     # via lightning
     # via moviepy
     # via proglog
@@ -232,6 +249,7 @@ triton==2.3.0
 typeshed-client==2.5.1
     # via jsonargparse
 typing-extensions==4.11.0
+    # via huggingface-hub
     # via lightning
     # via lightning-utilities
     # via mypy
@@ -242,7 +260,6 @@ urllib3==2.2.1
     # via requests
     # via sentry-sdk
 wandb==0.16.6
-    # via cnn
     # via rssm
 yarl==1.9.4
     # via aiohttp

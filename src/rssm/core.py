@@ -1,40 +1,79 @@
-"""Abstract classes for RSSM."""
+"""Reccurent State Space Model (RSSM)."""
 
 import tempfile
 from pathlib import Path
 
 import torch
 import wandb
+from distribution_extension import kl_divergence
 from lightning import LightningModule
 from torch import Tensor, nn
 
-from rssm.base.network import Representation, Transition
 from rssm.custom_types import DataGroup, LossDict
+from rssm.networks import Representation, Transition
+from rssm.objective import likelihood
 from rssm.state import State, stack_states
 
 
 class RSSM(LightningModule):
     """
-    Abstract class for RSSM.
+    Reccurent State Space Model (RSSM).
 
-    Note:
-    ----
-    Inherited classes must implement:
-        - `initial_state()`
-        - `_shared_step()`
+    References
+    ----------
+    * https://arxiv.org/abs/1912.01603 [Hafner+ 2019]
+    * https://arxiv.org/abs/2010.02193 [Hafner+ 2021]
+    * https://github.com/juliusfrost/dreamer-pytorch
+
+    Parameters
+    ----------
+    representation : Representation
+        Representation model (Approx. Posterior).
+    transition : Transition
+        Transition model (Prior).
+    encoder : nn.Module
+        Observation encoder.
+        I/O: [*B, C, H, W] -> [*B, obs_embed_size].
+    decoder : nn.Module
+        Observation decoder.
+        I/O: [*B, obs_embed_size] -> [*B, C, H, W].
+    init_proj : nn.Module
+        Initial projection layer.
+        I/O: [*B, obs_embed_size] -> [*B, deterministic_size].
+    kl_coeff : float
+        KL Divergence coefficient.
+    use_kl_balancing : bool
+        Whether to use KL balancing.
 
     """
 
-    def __init__(self) -> None:
+    def __init__(
+        self,
+        *,
+        representation: Representation,
+        transition: Transition,
+        encoder: nn.Module,
+        decoder: nn.Module,
+        init_proj: nn.Module,
+        kl_coeff: float,
+        use_kl_balancing: bool,
+    ) -> None:
         super().__init__()
-        self.representation = Representation()
-        self.transition = Transition()
-        self.encoder = nn.Module()
-        self.decoder = nn.Module()
+        self.representation = representation
+        self.transition = transition
+        self.encoder = encoder
+        self.decoder = decoder
+        self.init_proj = init_proj
+        self.kl_coeff = kl_coeff
+        self.use_kl_balancing = use_kl_balancing
 
     def initial_state(self, observation: Tensor) -> State:
         """Generate initial state as zero matrix."""
-        raise NotImplementedError
+        obs_embed = self.encoder(observation)
+        deter = self.init_proj(obs_embed)
+        stoch = self.transition.rnn_to_prior_projector(deter)
+        distribution = self.representation.distribution_factory(stoch)
+        return State(deter=deter, distribution=distribution).to(self.device)
 
     def rollout_representation(
         self,
@@ -53,6 +92,12 @@ class RSSM(LightningModule):
             5D Tensor [batch_size, seq_len, channel, height, width].
         prev_state : State
             2D Parameters [batch_size, state_size].
+
+        Returns
+        -------
+        tuple[State, State]
+            Posterior and prior states.
+            shape: [batch_size, seq_len, state_size].
 
         """
         obs_embed = self.encoder.forward(observations)
@@ -79,6 +124,11 @@ class RSSM(LightningModule):
         prev_state : State
             2D Parameters [batch_size, state_size].
 
+        Returns
+        -------
+        State
+            Prior states [batch_size, seq_len, state_size].
+
         """
         priors = []
         for t in range(actions.shape[1]):
@@ -101,7 +151,28 @@ class RSSM(LightningModule):
 
     def shared_step(self, batch: DataGroup) -> LossDict:
         """Rollout common step for training and validation."""
-        raise NotImplementedError
+        action_input, observation_input, _, observation_target = batch
+        posterior, prior = self.rollout_representation(
+            actions=action_input,
+            observations=observation_input,
+            prev_state=self.initial_state(observation_input[:, 0]),
+        )
+        reconstruction = self.decoder.forward(posterior.feature)
+        recon_loss = likelihood(
+            prediction=reconstruction,
+            target=observation_target,
+            event_ndims=3,
+        )
+        kl_div = kl_divergence(
+            q=posterior.distribution.independent(1),
+            p=prior.distribution.independent(1),
+            use_balancing=self.use_kl_balancing,
+        ).mul(self.kl_coeff)
+        return {
+            "loss": recon_loss + kl_div,
+            "recon": recon_loss,
+            "kl": kl_div,
+        }
 
     @classmethod
     def load_from_wandb(cls, reference: str) -> "RSSM":

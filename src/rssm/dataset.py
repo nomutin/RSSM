@@ -99,23 +99,22 @@ class EpisodeDataModule(LightningDataModule):
 
         self.path_to_data = Path("data") / data_name
 
-    def setup(self, stage: str = "train") -> None:  # noqa: ARG002
-        """Set up train/val/test dataset."""
-        act_path_list = []
-        obs_path_list = []
-
+    def prepare_data(self) -> None:
+        """Save processed data to temporary directory."""
         for act_path in sorted(self.path_to_data.glob("act*")):
             act = self.action_preprocess(load_tensor(act_path))
             new_path = Path("tmp") / f"{act_path.stem}.pt"
             torch.save(act.clone(), new_path)
-            act_path_list.append(new_path)
 
         for obs_path in sorted(self.path_to_data.glob("obs*")):
             obs = self.observation_preprocess(load_tensor(obs_path))
             new_path = Path("tmp") / f"{obs_path.stem}.pt"
             torch.save(obs.clone(), new_path)
-            obs_path_list.append(new_path)
 
+    def setup(self, stage: str = "train") -> None:
+        """Set up train/val/test dataset."""
+        act_path_list = sorted(Path("tmp").glob("act*"))
+        obs_path_list = sorted(Path("tmp").glob("obs*"))
         train_act_list, val_act_list = split_train_validation(act_path_list)
         train_obs_list, val_obs_list = split_train_validation(obs_path_list)
 
@@ -135,6 +134,16 @@ class EpisodeDataModule(LightningDataModule):
             action_augmentation=None,
             observation_augmentation=None,
         )
+
+        if stage == "test":
+            self.test_dataset = EpisodeDataset(
+                action_path_list=train_act_list + val_act_list,
+                observation_path_list=train_obs_list + val_obs_list,
+                action_transform=self.action_transform,
+                observation_transform=self.observation_transform,
+                action_augmentation=None,
+                observation_augmentation=None,
+            )
 
     def train_dataloader(self) -> DataLoader[DataGroup]:
         """Define training dataloader."""

@@ -1,13 +1,12 @@
-# ruff: noqa: SLF001
 """Callbacks for RSSM."""
 
 from lightning import Callback, LightningDataModule, LightningModule, Trainer
 from lightning.pytorch.loggers import WandbLogger
 
-from rssm.base.module import RSSM
+from rssm.core import RSSM
 from rssm.custom_types import DataGroup
 from rssm.state import cat_states
-from rssm.utils.visualize import to_wandb_movie
+from rssm.visualize import to_wandb_movie
 
 
 def get_validation_data(trainer: Trainer) -> DataGroup:

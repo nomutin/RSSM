@@ -2,45 +2,81 @@
 seed_everything: 42
 
 model:
-  class_path: rssm.RSSMV2
+  class_path: rssm.RSSM
   init_args:
-    deterministic_size: 600
-    class_size: 16
-    category_size: 16
-    hidden_size: 600
-    obs_embed_size: 512
-    action_size: 3
-    activation_name: ELU
-    encoder_config:
-      linear_sizes: [512,]
-      activation_name: ELU
-      out_activation_name: Identity
-      channels: [16, 32, 64]
-      kernel_sizes: [3, 3, 3]
-      strides: [2, 2, 2]
-      paddings: [1, 1, 1]
-      observation_shape: [3, 64, 64]
-    decoder_config:
-      linear_sizes: [856, ]
-      activation_name: ELU
-      out_activation_name: Sigmoid
-      channels: [64, 32, 16, 3]
-      kernel_sizes: [4, 4, 4]
-      strides: [2, 2, 2]
-      paddings: [1, 1, 1]
-      output_paddings: [0, 0, 0]
-      observation_shape: [3, 64, 64]
+    representation:
+      class_path: rssm.RepresentationV2
+      init_args:
+        deterministic_size: 400
+        class_size: 16
+        category_size: 16
+        hidden_size: 400
+        obs_embed_size: 256
+        activation_name: ELU
+    transition:
+      class_path: rssm.TransitionV2
+      init_args:
+        deterministic_size: 400
+        class_size: 16
+        category_size: 16
+        hidden_size: 400
+        action_size: 3
+        activation_name: ELU
+    encoder:
+      class_path: cnn.Encoder
+      init_args:
+        config:
+          linear_sizes: [256,]
+          activation_name: ELU
+          out_activation_name: Identity
+          channels: [16, 32, 64]
+          kernel_sizes: [3, 3, 3]
+          strides: [2, 2, 2]
+          paddings: [1, 1, 1]
+          observation_shape: [5, 64, 64]
+          coord_conv: true
+    decoder:
+      class_path: cnn.ResNetDecoder
+      init_args:
+        config:
+          linear_sizes: [656, ]
+          activation_name: ELU
+          out_activation_name: Sigmoid
+          channels: [64, 32, 16, 3]
+          kernel_sizes: [4, 4, 4]
+          strides: [2, 2, 2]
+          paddings: [1, 1, 1]
+          output_paddings: [0, 0, 0]
+          observation_shape: [3, 64, 64]
+          depth: 12
+    init_proj:
+      class_path: torchrl.modules.MLP
+      init_args:
+        in_features: 256
+        out_features: 400
+        num_cells: 400
+        depth: 1
     kl_coeff: 0.1
+    use_kl_balancing: true
 
 optimizer:
   class_path: torch.optim.AdamW
   init_args:
     lr: 0.001
 
+lr_scheduler:
+  class_path: lightning.pytorch.cli.ReduceLROnPlateau
+  init_args:
+    monitor: val_loss
+    mode: min
+    factor: 0.5
+    patience: 50
+    verbose: True
+
 trainer:
   accelerator: gpu
   devices: [1]
-  max_epochs: -1
+  max_epochs: 2000
   gradient_clip_val: 10
   deterministic: true
   precision: 16-mixed
@@ -58,7 +94,7 @@ trainer:
       class_path: EarlyStopping
       init_args:
         monitor: val_loss
-        patience: 50
+        patience: 200
         mode: min
         verbose: True
     - 
@@ -68,7 +104,7 @@ trainer:
         mode: min
         save_top_k: 1
     -
-      class_path: rssm.base.callback.LogRSSMOutput
+      class_path: rssm.callback.LogRSSMOutput
       init_args:
         every_n_epochs: 30
         indices: [0, 1, 2, 3, 4, 5, 6, 7]
@@ -143,10 +179,10 @@ data:
               contrast: 0.1
               saturation: 0.1
               hue: 0.1
-          - class_path: kornia.augmentation.RandomBoxBlur
-            init_args:
-              p: 0.3
-              kernel_size: [3, 3]
-          - class_path: kornia.augmentation.RandomErasing
-            init_args:
-              p: 0.3
+          # - class_path: kornia.augmentation.RandomBoxBlur
+          #   init_args:
+          #     p: 0.3
+          #     kernel_size: [3, 3]
+          # - class_path: kornia.augmentation.RandomErasing
+          #   init_args:
+          #     p: 0.3

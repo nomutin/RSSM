@@ -6,6 +6,7 @@
 #   features: []
 #   all-features: false
 #   with-sources: false
+#   generate-hashes: false
 
 -e file:.
 aiohttp==3.9.5
@@ -28,15 +29,11 @@ click==8.1.7
 cloudpickle==3.0.0
     # via tensordict
     # via torchrl
-cnn @ git+https://github.com/nomutin/CNN.git@5be2e1438211eb4af956fc0d659a2b1bf8716ff5
-    # via rssm
-distribution-extension @ git+https://github.com/nomutin/distribution-extension.git@b71f2ffdf76e86e9af7726f546eee8ef0e3b35ae
-    # via cnn
+distribution-extension @ git+https://github.com/nomutin/distribution-extension.git@0b5c0cdf5bd19f6f21e373b24d5139deffe93c98
     # via rssm
 docker-pycreds==0.4.0
     # via wandb
 einops==0.8.0
-    # via cnn
     # via distribution-extension
 filelock==3.14.0
     # via torch
@@ -142,7 +139,6 @@ tensordict==0.4.0
 torch==2.3.0
     # via lightning
     # via pytorch-lightning
-    # via rssm
     # via tensordict
     # via torchmetrics
     # via torchrl
@@ -165,7 +161,6 @@ urllib3==2.2.1
     # via requests
     # via sentry-sdk
 wandb==0.16.6
-    # via cnn
     # via rssm
 yarl==1.9.4
     # via aiohttp

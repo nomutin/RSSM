@@ -2,34 +2,60 @@
 seed_everything: 42
 
 model:
-  class_path: rssm.RSSMV1
+  class_path: rssm.RSSM
   init_args:
-    deterministic_size: 64
-    stochastic_size: 16
-    hidden_size: 64
-    obs_embed_size: 256
-    action_size: 3
-    activation_name: ELU
-    encoder_config:
-      linear_sizes: [256,]
-      activation_name: ELU
-      out_activation_name: Identity
-      channels: [8, 16, 32]
-      kernel_sizes: [3, 3, 3]
-      strides: [2, 2, 2]
-      paddings: [1, 1, 1]
-      observation_shape: [3, 64, 64]
-    decoder_config:
-      linear_sizes: [80, 256]
-      activation_name: ELU
-      out_activation_name: Sigmoid
-      channels: [32, 16, 8, 3]
-      kernel_sizes: [4, 4, 4]
-      strides: [2, 2, 2]
-      paddings: [1, 1, 1]
-      output_paddings: [0, 0, 0]
-      observation_shape: [3, 64, 64]
+    representation:
+      class_path: rssm.RepresentationV1
+      init_args:
+        deterministic_size: 200
+        stochastic_size: 30
+        obs_embed_size: 256
+        hidden_size: 200
+        activation_name: ELU
+    transition:
+      class_path: rssm.TransitionV1
+      init_args:
+        deterministic_size: 200
+        stochastic_size: 30
+        hidden_size: 64
+        action_size: 3
+        activation_name: ELU
+    encoder:
+      class_path: cnn.Encoder
+      init_args:
+        config:
+          linear_sizes: [256,]
+          activation_name: ELU
+          out_activation_name: Identity
+          channels: [8, 16, 32]
+          kernel_sizes: [3, 3, 3]
+          strides: [2, 2, 2]
+          paddings: [1, 1, 1]
+          observation_shape: [5, 64, 64]
+          coord_conv: true
+    decoder:
+      class_path: cnn.ResNetDecoder
+      init_args:
+        config:
+          linear_sizes: [230, 256]
+          activation_name: ELU
+          out_activation_name: Sigmoid
+          channels: [32, 16, 8, 3]
+          kernel_sizes: [4, 4, 4]
+          strides: [2, 2, 2]
+          paddings: [1, 1, 1]
+          output_paddings: [0, 0, 0]
+          observation_shape: [3, 64, 64]
+          depth: 4
+    init_proj:
+      class_path: torchrl.modules.MLP
+      init_args:
+        in_features: 256
+        out_features: 200
+        num_cells: 200
+        depth: 1
     kl_coeff: 0.1
+    use_kl_balancing: false
 
 optimizer:
   class_path: torch.optim.AdamW
@@ -38,8 +64,8 @@ optimizer:
 
 trainer:
   accelerator: gpu
-  devices: [1]
   max_epochs: -1
+  devices: [2]
   gradient_clip_val: 10
   deterministic: true
   precision: 16-mixed
@@ -67,7 +93,7 @@ trainer:
         mode: min
         save_top_k: 1
     -
-      class_path: rssm.base.callback.LogRSSMOutput
+      class_path: rssm.callback.LogRSSMOutput
       init_args:
         every_n_epochs: 30
         indices: [0, 1, 2, 3, 4, 5, 6, 7]
