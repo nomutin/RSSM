@@ -139,7 +139,6 @@ tensordict==0.4.0
 torch==2.3.0
     # via lightning
     # via pytorch-lightning
-    # via rssm
     # via tensordict
     # via torchmetrics
     # via torchrl

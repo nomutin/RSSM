@@ -3,7 +3,6 @@ name = "rssm"
 version = "0.1.0"
 description = "Reccurent State-Space Model"
 dependencies = [
-    "torch>=2.2.1",
     "lightning>=2.2.1",
     "wandb>=0.16.4",
     "torchrl>=0.3.1",

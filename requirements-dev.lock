@@ -222,7 +222,6 @@ torch==2.3.0
     # via kornia
     # via lightning
     # via pytorch-lightning
-    # via rssm
     # via tensordict
     # via timm
     # via torchgeometry
