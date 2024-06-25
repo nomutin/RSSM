@@ -2,17 +2,21 @@
 
 import tempfile
 from pathlib import Path
+from typing import TYPE_CHECKING, Any
 
 import torch
 import wandb
 from distribution_extension import kl_divergence
+from hydra.utils import instantiate
 from lightning import LightningModule
 from torch import Tensor, nn
 
 from rssm.custom_types import DataGroup, LossDict
-from rssm.networks import Representation, Transition
 from rssm.objective import likelihood
 from rssm.state import State, stack_states
+
+if TYPE_CHECKING:
+    from rssm.networks import Representation, Transition
 
 
 class RSSM(LightningModule):
@@ -27,17 +31,17 @@ class RSSM(LightningModule):
 
     Parameters
     ----------
-    representation : Representation
+    representation : DictConfig of Representation
         Representation model (Approx. Posterior).
-    transition : Transition
+    transition : DictConfig of Transition
         Transition model (Prior).
-    encoder : nn.Module
+    encoder : DictConfig of nn.Module
         Observation encoder.
         I/O: [*B, C, H, W] -> [*B, obs_embed_size].
-    decoder : nn.Module
+    decoder : DictConfig of nn.Module
         Observation decoder.
         I/O: [*B, obs_embed_size] -> [*B, C, H, W].
-    init_proj : nn.Module
+    init_proj : DictConfig of nn.Module
         Initial projection layer.
         I/O: [*B, obs_embed_size] -> [*B, deterministic_size].
     kl_coeff : float
@@ -50,20 +54,21 @@ class RSSM(LightningModule):
     def __init__(
         self,
         *,
-        representation: Representation,
-        transition: Transition,
-        encoder: nn.Module,
-        decoder: nn.Module,
-        init_proj: nn.Module,
+        representation: dict[str, Any],
+        transition: dict[str, Any],
+        encoder: dict[str, Any],
+        decoder: dict[str, Any],
+        init_proj: dict[str, Any],
         kl_coeff: float,
         use_kl_balancing: bool,
     ) -> None:
         super().__init__()
-        self.representation = representation
-        self.transition = transition
-        self.encoder = encoder
-        self.decoder = decoder
-        self.init_proj = init_proj
+        self.save_hyperparameters()
+        self.representation: Representation = instantiate(representation)
+        self.transition: Transition = instantiate(transition)
+        self.encoder: nn.Module = instantiate(encoder)
+        self.decoder: nn.Module = instantiate(decoder)
+        self.init_proj: nn.Module = instantiate(init_proj)
         self.kl_coeff = kl_coeff
         self.use_kl_balancing = use_kl_balancing
 
