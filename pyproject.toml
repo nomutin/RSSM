@@ -1,12 +1,10 @@
 [project]
 name = "rssm"
-version = "0.1.0"
+version = "0.1.2"
 description = "Reccurent State-Space Model"
 dependencies = [
     "lightning>=2.2.1",
-    "wandb>=0.16.4",
     "torchrl>=0.3.1",
-    "hydra-core>=1.3.2",
     "distribution-extension @ git+https://github.com/nomutin/distribution-extension.git",
 ]
 readme = "README.md"
@@ -21,16 +19,7 @@ managed = true
 dev-dependencies = [
     "mypy>=1.9.0",
     "ruff>=0.4.2",
-    "kornia>=0.7.2",
-    "imageio>=2.34.1",
-    "moviepy>=1.0.3",
-    "gdown>=5.1.0",
-    "matplotlib>=3.8.4",
-    "rich>=13.7.1",
-    "einops>=0.8.0",
-    "torchvision>=0.18.0",
-    "jsonargparse[signatures]>=4.27.7",
-    "cnn @ git+https://github.com/nomutin/CNN",
+    "pytest-cov>=5.0.0",
 ]
 
 [tool.hatch.metadata]
@@ -39,12 +28,21 @@ allow-direct-references = true
 [tool.hatch.build.targets.wheel]
 packages = ["src/rssm"]
 
+[tool.pytest.ini_options]
+filterwarnings = [
+    "ignore::UserWarning",
+    "ignore::DeprecationWarning",
+]
+
+[tool.rye.scripts]
+cov = "pytest -ra --cov=src --cov-report=term --cov-report=xml"
+
 [tool.mypy]
 python_version = "3.10"
 ignore_missing_imports = true
 
 [tool.ruff]
-line-length = 79
+line-length = 80
 target-version = "py310"
 
 [tool.ruff.lint]
@@ -69,8 +67,10 @@ known-first-party = ["rssm"]
 [tool.ruff.lint.per-file-ignores]
 "src/rssm/core.py" = ["PLR0913"]
 "src/rssm/networks.py" = ["PLR0913"]
-"src/rssm/dataset.py" = ["PLR0913"]
-"src/rssm/callback.py" = ["SLF001"]
+"example/dataset.py" = ["PLR0913"]
+"example/callback.py" = ["SLF001"]
+"tests/*.py" = ["S101"]
+"tests/test__core.py" = ["PLR6301", "PLR2004"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "numpy"

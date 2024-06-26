@@ -1,22 +1,17 @@
 """Reccurent State Space Model (RSSM)."""
 
-import tempfile
-from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TypeAlias
 
-import torch
-import wandb
 from distribution_extension import kl_divergence
-from hydra.utils import instantiate
 from lightning import LightningModule
 from torch import Tensor, nn
 
-from rssm.custom_types import DataGroup, LossDict
+from rssm.networks import Representation, Transition
 from rssm.objective import likelihood
 from rssm.state import State, stack_states
 
-if TYPE_CHECKING:
-    from rssm.networks import Representation, Transition
+DataGroup: TypeAlias = tuple[Tensor, Tensor, Tensor, Tensor]
+LossDict: TypeAlias = dict[str, Tensor]
 
 
 class RSSM(LightningModule):
@@ -31,14 +26,14 @@ class RSSM(LightningModule):
 
     Parameters
     ----------
-    representation : DictConfig of Representation
+    representation : Representation
         Representation model (Approx. Posterior).
-    transition : DictConfig of Transition
+    transition : Transition
         Transition model (Prior).
-    encoder : DictConfig of nn.Module
+    encoder : nn.Module
         Observation encoder.
         I/O: [*B, C, H, W] -> [*B, obs_embed_size].
-    decoder : DictConfig of nn.Module
+    decoder : nn.Module
         Observation decoder.
         I/O: [*B, obs_embed_size] -> [*B, C, H, W].
     init_proj : DictConfig of nn.Module
@@ -54,21 +49,20 @@ class RSSM(LightningModule):
     def __init__(
         self,
         *,
-        representation: dict[str, Any],
-        transition: dict[str, Any],
-        encoder: dict[str, Any],
-        decoder: dict[str, Any],
-        init_proj: dict[str, Any],
+        representation: Representation,
+        transition: Transition,
+        encoder: nn.Module,
+        decoder: nn.Module,
+        init_proj: nn.Module,
         kl_coeff: float,
         use_kl_balancing: bool,
     ) -> None:
         super().__init__()
-        self.save_hyperparameters()
-        self.representation: Representation = instantiate(representation)
-        self.transition: Transition = instantiate(transition)
-        self.encoder: nn.Module = instantiate(encoder)
-        self.decoder: nn.Module = instantiate(decoder)
-        self.init_proj: nn.Module = instantiate(init_proj)
+        self.representation = representation
+        self.transition = transition
+        self.encoder = encoder
+        self.decoder = decoder
+        self.init_proj = init_proj
         self.kl_coeff = kl_coeff
         self.use_kl_balancing = use_kl_balancing
 
@@ -178,18 +172,3 @@ class RSSM(LightningModule):
             "recon": recon_loss,
             "kl": kl_div,
         }
-
-    @classmethod
-    def load_from_wandb(cls, reference: str) -> "RSSM":
-        """Load the model from wandb checkpoint."""
-        run = wandb.Api().artifact(reference)  # type: ignore[no-untyped-call]
-        with tempfile.TemporaryDirectory() as tmpdir:
-            ckpt = Path(run.download(root=tmpdir))
-            model = cls.load_from_checkpoint(
-                checkpoint_path=ckpt / "model.ckpt",
-                map_location=torch.device("cpu"),
-            )
-        if not isinstance(model, cls):
-            msg = f"Model is not an instance of {cls}"
-            raise TypeError(msg)
-        return model

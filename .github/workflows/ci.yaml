@@ -5,9 +5,25 @@ on:
     branches:
       - main
 
+
 jobs:
-  ruff:
+  ci:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: chartboost/ruff-action@v1
+      - name: Set up rye
+        uses: eifinger/setup-rye@v3
+      - name: Install dependencies
+        run: |
+          rye config --set-bool behavior.use-uv=true
+          rye sync --no-lock
+      - name: Run lint
+        run: |
+          rye lint
+      - name: Run tests
+        run: |
+          rye run cov
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v3
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
