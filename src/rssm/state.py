@@ -7,7 +7,7 @@ from distribution_extension import Distribution
 from distribution_extension.utils import cat_distribution, stack_distribution
 from torch import Tensor
 
-from rssm.custom_types import Slice
+Slice = slice | int | tuple[slice | int, ...]
 
 
 class State:

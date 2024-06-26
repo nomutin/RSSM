@@ -3,6 +3,7 @@
 ![python](https://img.shields.io/badge/python-3.10-blue)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/charliermarsh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 [![CI](https://github.com/nomutin/RSSM/actions/workflows/ci.yaml/badge.svg)](https://github.com/nomutin/RSSM/actions/workflows/ci.yaml)
+[![codecov](https://codecov.io/gh/nomutin/RSSM/graph/badge.svg?token=YMR2H87R5C)](https://codecov.io/gh/nomutin/RSSM)
 
 [RSSMs](https://danijar.com/project/dreamer/) for imitation learning.
 
