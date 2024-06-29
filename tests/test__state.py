@@ -78,6 +78,21 @@ def test__detach(state: State) -> None:
     assert state.stoch.requires_grad is False
 
 
+def test__unsqueeze(state: State) -> None:
+    """Test the unsqueeze method."""
+    state = state.unsqueeze(dim=1)
+    assert state.deter.shape == (BATCH_SIZE, 1, SEQ_LEN, DETERMINISTIC_SIZE)
+    assert state.stoch.shape == (BATCH_SIZE, 1, SEQ_LEN, STOCHASTIC_SIZE)
+
+
+def test__squeeze(state: State) -> None:
+    """Test the squeeze method."""
+    state = state.unsqueeze(dim=1)
+    state = state.squeeze(dim=1)
+    assert state.deter.shape == (BATCH_SIZE, SEQ_LEN, DETERMINISTIC_SIZE)
+    assert state.stoch.shape == (BATCH_SIZE, SEQ_LEN, STOCHASTIC_SIZE)
+
+
 def test__stack_state(state: State) -> None:
     """Test the stack_states function."""
     num_states = 2

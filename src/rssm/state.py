@@ -56,6 +56,22 @@ class State:
             distribution=self.distribution.detach(),
         )
 
+    def squeeze(self, dim: int) -> "State":
+        """Squeeze the state."""
+        return type(self)(
+            deter=self.deter.squeeze(dim),
+            stoch=self.stoch.squeeze(dim),
+            distribution=self.distribution.squeeze(dim),
+        )
+
+    def unsqueeze(self, dim: int) -> "State":
+        """Unsqueeze the state."""
+        return type(self)(
+            deter=self.deter.unsqueeze(dim),
+            stoch=self.stoch.unsqueeze(dim),
+            distribution=self.distribution.unsqueeze(dim),
+        )
+
 
 def stack_states(states: list[State], dim: int) -> State:
     """Stack states along the given dimension."""
