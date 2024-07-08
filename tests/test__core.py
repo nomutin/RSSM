@@ -44,7 +44,7 @@ class DummyDecoder(nn.Module):
         return rand(BATCH_SIZE, SEQ_LEN, 3, 64, 64)
 
 
-@pytest.fixture()
+@pytest.fixture
 def continuous_rssm() -> RSSM:
     """Create a continuous RSSM instance."""
     representation = RepresentationV1(
@@ -73,7 +73,7 @@ def continuous_rssm() -> RSSM:
     )
 
 
-@pytest.fixture()
+@pytest.fixture
 def discrete_rssm() -> RSSM:
     """Create a discrete RSSM instance."""
     representation = RepresentationV2(

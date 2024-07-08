@@ -7,6 +7,7 @@
 #   all-features: false
 #   with-sources: false
 #   generate-hashes: false
+#   universal: false
 
 -e file:.
 aiohttp==3.9.5
@@ -22,7 +23,7 @@ cloudpickle==3.0.0
     # via torchrl
 coverage==7.5.4
     # via pytest-cov
-distribution-extension @ git+https://github.com/nomutin/distribution-extension.git@0b5c0cdf5bd19f6f21e373b24d5139deffe93c98
+distribution-extension @ git+https://github.com/nomutin/distribution-extension.git@8fba25a911bd8fbc7d3edab06fa5fbfd4f48a3d7
     # via rssm
 einops==0.8.0
     # via distribution-extension
@@ -113,7 +114,7 @@ pytorch-lightning==2.2.3
 pyyaml==6.0.1
     # via lightning
     # via pytorch-lightning
-ruff==0.4.2
+ruff==0.5.1
 setuptools==69.5.1
     # via lightning-utilities
 sympy==1.12

@@ -7,6 +7,7 @@
 #   all-features: false
 #   with-sources: false
 #   generate-hashes: false
+#   universal: false
 
 -e file:.
 aiohttp==3.9.5
@@ -20,7 +21,7 @@ attrs==23.2.0
 cloudpickle==3.0.0
     # via tensordict
     # via torchrl
-distribution-extension @ git+https://github.com/nomutin/distribution-extension.git@0b5c0cdf5bd19f6f21e373b24d5139deffe93c98
+distribution-extension @ git+https://github.com/nomutin/distribution-extension.git@8fba25a911bd8fbc7d3edab06fa5fbfd4f48a3d7
     # via rssm
 einops==0.8.0
     # via distribution-extension

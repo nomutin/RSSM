@@ -22,7 +22,7 @@ jobs:
           rye sync --no-lock
       - name: Run lint
         run: |
-          rye lint
+          rye run ruff check .
       - name: Run tests
         run: |
           rye run cov

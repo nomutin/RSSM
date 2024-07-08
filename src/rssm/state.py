@@ -56,6 +56,14 @@ class State:
             distribution=self.distribution.detach(),
         )
 
+    def clone(self) -> "State":
+        """Clone the state."""
+        return type(self)(
+            deter=self.deter.clone(),
+            stoch=self.stoch.clone(),
+            distribution=self.distribution.clone(),
+        )
+
     def squeeze(self, dim: int) -> "State":
         """Squeeze the state."""
         return type(self)(

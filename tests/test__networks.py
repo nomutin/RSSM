@@ -1,6 +1,5 @@
 """Tests of `networks.py`."""
 
-
 from torch import Tensor
 
 from rssm import State

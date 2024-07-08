@@ -18,25 +18,25 @@ HIDDEN_SIZE = 32
 OBS_EMBED_SIZE = 7
 
 
-@pytest.fixture()
+@pytest.fixture
 def action_bd() -> Tensor:
     """Create a batch of actions."""
     return torch.rand(BATCH_SIZE, ACTION_SIZE)
 
 
-@pytest.fixture()
+@pytest.fixture
 def observation_bd() -> Tensor:
     """Create a batch of observations."""
     return torch.rand(BATCH_SIZE, 3, 64, 64)
 
 
-@pytest.fixture()
+@pytest.fixture
 def obs_embed_bd() -> Tensor:
     """Create a batch of observation embeddings."""
     return torch.rand(BATCH_SIZE, OBS_EMBED_SIZE)
 
 
-@pytest.fixture()
+@pytest.fixture
 def state_bd() -> State:
     """Create a batch of states(continuous)."""
     deter = torch.rand(BATCH_SIZE, DETERMINISTIC_SIZE)
@@ -46,7 +46,7 @@ def state_bd() -> State:
     return State(deter=deter, distribution=distribution)
 
 
-@pytest.fixture()
+@pytest.fixture
 def state_discrete_bd() -> State:
     """Create a batch of states(discrete)."""
     deter = torch.rand(BATCH_SIZE, DETERMINISTIC_SIZE)
@@ -55,13 +55,13 @@ def state_discrete_bd() -> State:
     return State(deter=deter, distribution=distribution)
 
 
-@pytest.fixture()
+@pytest.fixture
 def action_bld() -> Tensor:
     """Create a batch of actions."""
     return torch.rand(BATCH_SIZE, SEQ_LEN, ACTION_SIZE)
 
 
-@pytest.fixture()
+@pytest.fixture
 def observation_bld() -> Tensor:
     """Create a batch of observations."""
     return torch.rand(BATCH_SIZE, SEQ_LEN, 3, 64, 64)

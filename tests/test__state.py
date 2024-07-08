@@ -13,7 +13,7 @@ from tests.conftest import (
 )
 
 
-@pytest.fixture()
+@pytest.fixture
 def state() -> State:
     """Create a State instance."""
     deter = torch.rand(
@@ -46,7 +46,7 @@ def test__iter__(state: State) -> None:
         assert s.stoch.shape == (SEQ_LEN, STOCHASTIC_SIZE)
         assert s.feature.shape == (
             SEQ_LEN,
-            DETERMINISTIC_SIZE + STOCHASTIC_SIZE
+            DETERMINISTIC_SIZE + STOCHASTIC_SIZE,
         )
 
 
@@ -58,7 +58,7 @@ def test__getitem__(state: State) -> None:
         assert s.stoch.shape == (BATCH_SIZE, STOCHASTIC_SIZE)
         assert s.feature.shape == (
             BATCH_SIZE,
-            DETERMINISTIC_SIZE + STOCHASTIC_SIZE
+            DETERMINISTIC_SIZE + STOCHASTIC_SIZE,
         )
 
 
@@ -76,6 +76,20 @@ def test__detach(state: State) -> None:
     state = state.detach()
     assert state.deter.requires_grad is False
     assert state.stoch.requires_grad is False
+
+
+def test__clone(state: State) -> None:
+    """Test the clone method."""
+    clone = state.clone()
+    assert clone.deter.shape == (BATCH_SIZE, SEQ_LEN, DETERMINISTIC_SIZE)
+    assert clone.stoch.shape == (BATCH_SIZE, SEQ_LEN, STOCHASTIC_SIZE)
+    assert clone.feature.shape == (
+        BATCH_SIZE,
+        SEQ_LEN,
+        DETERMINISTIC_SIZE + STOCHASTIC_SIZE,
+    )
+    assert clone.deter.requires_grad is True
+    assert clone.stoch.requires_grad is True
 
 
 def test__unsqueeze(state: State) -> None:
