@@ -7,41 +7,48 @@ from torch import Tensor
 
 class NormalizeAction:
     """
-    行動データの正規化.
-
-    torchvision等と同様, `data = (data - mean) / std` の計算を行う.
+    Normalize 3D+ tensor with given max and min values.
 
     Parameters
     ----------
-    mean : list[float]
-        平均値. `(max + min) / 2` で求める.
-    std : list[float]
-        標準偏差. `(max - min) / 2` で求める.
-
+    max_array : list[int]
+        Maximum values for each dimension.
+    min_array : list[int]
+        Minimum values for each dimension.
     """
 
-    def __init__(self, mean: list[float], std: list[float]) -> None:
-        self.mean = Tensor(mean)
-        self.std = Tensor(std)
+    def __init__(self, max_array: list[int], min_array: list[int]) -> None:
+        self.max_array = Tensor(max_array)
+        self.min_array = Tensor(min_array)
 
     def __call__(self, data: Tensor) -> Tensor:
         """
-        正規化.
+        Apply normalization.
 
         Parameters
         ----------
         data : Tensor
-            正規化するデータ.
-            最後の次元数が `len(mean)` と一致してればバッチサイズは何でもいい
+            Data to normalize.
+            Shape: [B*, len(self.max_array)].
+
+        Returns
+        -------
+        Tensor
+            Normalized data. Shape: [B*, len(self.max_array)].
+
         """
-        return data.sub(self.mean).div(self.std)
+        copy_data = data.detach().clone()
+        copy_data -= self.min_array
+        copy_data *= 1.0 / (self.max_array - self.min_array)
+        copy_data *= 2.0
+        copy_data += -1.0
+        return copy_data
 
 
 class RandomWindow:
     """シーケンスデータをランダムにウィンドウで切り出す."""
 
     def __init__(self, window_size: int) -> None:
-        """Initialize parameters."""
         self.window_size = window_size
         self.randgen = Generator(MT19937(42))
 
@@ -56,7 +63,6 @@ class RemoveDim:
     """指定した次元を削除する."""
 
     def __init__(self, axis: int, indices_to_remove: list[int]) -> None:
-        """Initialize parameters."""
         self.axis = axis
         self.remove = indices_to_remove
 
