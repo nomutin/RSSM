@@ -1,6 +1,6 @@
 [project]
 name = "rssm"
-version = "0.1.0"
+version = "0.1.5"
 description = "Reccurent State-Space Model"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -65,13 +65,6 @@ known-first-party = ["rssm"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "numpy"
-
-[tool.poe.tasks]
-lint-ruff = "ruff check --fix ."
-lint-pydoclint = "pydoclint ."
-lint-mypy = "mypy --strict ."
-lint = ["lint-ruff", "lint-pydoclint", "lint-mypy",]
-test = "pytest -ra --cov=src --cov-report=term --cov-report=xml"
 
 [tool.poe.tasks.run]
 script = "lightning.pytorch.cli:LightningCLI(save_config_kwargs={'overwrite': True})"

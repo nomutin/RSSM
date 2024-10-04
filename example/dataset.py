@@ -1,13 +1,20 @@
 """Datamodule that reads local `.pt` files."""
 
+import tarfile
+from collections.abc import Callable
+from dataclasses import dataclass
 from pathlib import Path
+from typing import TypeAlias
 
+import gdown
 import numpy as np
 import torch
 from lightning import LightningDataModule
 from torch import Tensor
-from torch.utils.data import DataLoader, Dataset
-from torchvision.transforms import Compose
+from torch.utils.data import DataLoader, Dataset, StackDataset
+from tqdm import tqdm
+
+Transform: TypeAlias = Callable[[Tensor], Tensor]
 
 
 def load_tensor(path: Path) -> Tensor:
@@ -57,117 +64,131 @@ def split_path_list(path_list: list[Path], train_ratio: float) -> tuple[list[Pat
     return path_list[:split_point], path_list[split_point:]
 
 
-class EpisodeDataset(Dataset[tuple[Tensor, ...]]):
-    """Dataset with actions & observations."""
+class EpisodeDataset(Dataset[Tensor]):
+    """
+    Dataset for single modality data.
 
-    def __init__(
-        self,
-        *,
-        action_path_list: list[Path],
-        observation_path_list: list[Path],
-        action_transform: Compose | None = None,
-        observation_transform: Compose | None = None,
-        action_augmentation: Compose | None = None,
-        observation_augmentation: Compose | None = None,
-    ) -> None:
+    Parameters
+    ----------
+    path_list : list[Path]
+        List of file paths.
+    transform : Transform
+        Transform function.
+    """
+
+    def __init__(self, path_list: list[Path], transform: Transform) -> None:
         super().__init__()
-        self.act_path_list = action_path_list
-        self.obs_path_list = observation_path_list
-        self.act_transform = action_transform or Compose([])
-        self.obs_transform = observation_transform or Compose([])
-        self.act_augmentation = action_augmentation or Compose([])
-        self.obs_augmentation = observation_augmentation or Compose([])
+        self.path_list = path_list
+        self.transform = transform
 
     def __len__(self) -> int:
-        """Return the number of data."""
-        return len(self.act_path_list)
+        """
+        Return the number of data.
 
-    def __getitem__(self, idx: int) -> tuple[Tensor, ...]:
-        """Apply transforms to and return tensors."""
-        act = self.act_transform(load_tensor(self.act_path_list[idx]))
-        obs = self.obs_transform(load_tensor(self.obs_path_list[idx]))
-        return (
-            self.act_augmentation(act[:-1]),
-            self.obs_augmentation(obs[:-1]),
-            act[1:],
-            obs[1:],
-        )
+        Returns
+        -------
+        int
+            Number of data(Len of path_list).
+        """
+        return len(self.path_list)
+
+    def __getitem__(self, idx: int) -> Tensor:
+        """
+        Get the data at the index and apply the transform.
+
+        Parameters
+        ----------
+        idx : int
+            Index of the data.
+
+        Returns
+        -------
+        Tensor
+            Transformed data.
+        """
+        return self.transform(load_tensor(self.path_list[idx]))
+
+
+@dataclass
+class EpisodeDataModuleConfig:
+    """EpisodeDataModuleの設定."""
+
+    data_name: str
+    batch_size: int
+    num_workers: int
+    gdrive_url: str
+    action_preprocess: Transform
+    observation_preprocess: Transform
+    action_input_transform: Transform
+    action_target_transform: Transform
+    observation_input_transform: Transform
+    observation_target_transform: Transform
+
+    @property
+    def data_dir(self) -> Path:
+        """データのディレクトリパス."""
+        return Path("data") / self.data_name
+
+    @property
+    def processed_data_dir(self) -> Path:
+        """加工済みデータのディレクトリパス."""
+        return Path("data") / f"{self.data_name}_processed_episode"
+
+    def load_from_gdrive(self) -> None:
+        """Google Drive からデータをダウンロードする."""
+        filename = gdown.download(self.gdrive_url, quiet=False, fuzzy=True)
+        with tarfile.open(filename, "r:gz") as f:
+            f.extractall(path=Path("data"), filter="data")
+        Path(filename).unlink(missing_ok=False)
 
 
 class EpisodeDataModule(LightningDataModule):
     """DataModule with actions & observations."""
 
-    def __init__(
-        self,
-        *,
-        data_name: str,
-        batch_size: int,
-        num_workers: int,
-        action_preprocess: Compose | None = None,
-        observation_preprocess: Compose | None = None,
-        action_transform: Compose | None = None,
-        observation_transform: Compose | None = None,
-        action_augmentation: Compose | None = None,
-        observation_augmentation: Compose | None = None,
-    ) -> None:
+    def __init__(self, config: EpisodeDataModuleConfig) -> None:
         super().__init__()
-        self.data_name = data_name
-        self.batch_size = batch_size
-        self.num_workers = num_workers
-        self.action_preprocess = action_preprocess or Compose([])
-        self.observation_preprocess = observation_preprocess or Compose([])
-        self.action_transform = action_transform
-        self.observation_transform = observation_transform
-        self.action_augmentation = action_augmentation
-        self.observation_augmentation = observation_augmentation
-
-        self.path_to_data = Path("data") / data_name
+        self.config = config
 
     def prepare_data(self) -> None:
-        """Save processed data to temporary directory."""
-        for act_path in sorted(self.path_to_data.glob("act*")):
-            act = self.action_preprocess(load_tensor(act_path))
-            new_path = Path("tmp") / f"{act_path.stem}.pt"
-            torch.save(act.clone(), new_path)
+        """`{data_name}_processed_episode`ディレクトリに加工済みデータを保存する."""
+        if not self.config.data_dir.exists():
+            self.config.load_from_gdrive()
 
-        for obs_path in sorted(self.path_to_data.glob("obs*")):
-            obs = self.observation_preprocess(load_tensor(obs_path))
-            new_path = Path("tmp") / f"{obs_path.stem}.pt"
-            torch.save(obs.clone(), new_path)
+        if self.config.processed_data_dir.exists():
+            return
 
-    def setup(self, stage: str = "train") -> None:
-        """Set up train/val/test dataset."""
-        act_path_list = sorted(Path("tmp").glob("act*"))
-        obs_path_list = sorted(Path("tmp").glob("obs*"))
-        train_act_list, val_act_list = split_path_list(act_path_list, 0.8)
-        train_obs_list, val_obs_list = split_path_list(obs_path_list, 0.8)
+        self.config.processed_data_dir.mkdir(parents=True, exist_ok=True)
+        for action_path in tqdm(sorted(self.config.data_dir.glob("act*"))):
+            action = self.config.action_preprocess(load_tensor(action_path))
+            new_path = self.config.processed_data_dir / f"{action_path.stem}.pt"
+            torch.save(action.detach().clone(), new_path)
 
-        self.train_dataset = EpisodeDataset(
-            action_path_list=train_act_list,
-            observation_path_list=train_obs_list,
-            action_transform=self.action_transform,
-            observation_transform=self.observation_transform,
-            action_augmentation=self.action_augmentation,
-            observation_augmentation=self.observation_augmentation,
-        )
-        self.val_dataset = EpisodeDataset(
-            action_path_list=val_act_list,
-            observation_path_list=val_obs_list,
-            action_transform=self.action_transform,
-            observation_transform=self.observation_transform,
-            action_augmentation=None,
-            observation_augmentation=None,
-        )
+        for observation_path in tqdm(sorted(self.config.data_dir.glob("obs*"))):
+            observation = self.config.observation_preprocess(load_tensor(observation_path))
+            new_path = self.config.processed_data_dir / f"{observation_path.stem}.pt"
+            torch.save(observation.detach().clone(), new_path)
 
-        if stage == "test":
-            self.test_dataset = EpisodeDataset(
-                action_path_list=train_act_list + val_act_list,
-                observation_path_list=train_obs_list + val_obs_list,
-                action_transform=self.action_transform,
-                observation_transform=self.observation_transform,
-                action_augmentation=None,
-                observation_augmentation=None,
+    def setup(self, stage: str = "fit") -> None:
+        """Create datasets."""
+        action_path_list = sorted(self.config.processed_data_dir.glob("act*"))
+        observation_path_list = sorted(self.config.processed_data_dir.glob("qua*"))
+
+        train_action_list, val_action_list = split_path_list(action_path_list, 0.8)
+        train_observation_list, val_observation_list = split_path_list(observation_path_list, 0.8)
+
+        if stage == "fit":
+            self.train_dataset = StackDataset(
+                EpisodeDataset(train_action_list, self.config.action_input_transform),
+                EpisodeDataset(train_action_list, self.config.action_target_transform),
+                EpisodeDataset(train_observation_list, self.config.observation_input_transform),
+                EpisodeDataset(train_observation_list, self.config.observation_target_transform),
             )
+        self.val_dataset = StackDataset(
+            EpisodeDataset(val_action_list, self.config.action_input_transform),
+            EpisodeDataset(val_action_list, self.config.action_target_transform),
+            EpisodeDataset(val_observation_list, self.config.observation_input_transform),
+            EpisodeDataset(val_observation_list, self.config.observation_target_transform),
+        )
 
     def train_dataloader(self) -> DataLoader[tuple[Tensor, ...]]:
         """
@@ -180,9 +201,9 @@ class EpisodeDataModule(LightningDataModule):
         """
         return DataLoader(
             dataset=self.train_dataset,
-            batch_size=self.batch_size,
+            batch_size=self.config.batch_size,
             shuffle=True,
-            num_workers=self.num_workers,
+            num_workers=self.config.num_workers,
             persistent_workers=True,
             prefetch_factor=1,
         )
@@ -198,9 +219,9 @@ class EpisodeDataModule(LightningDataModule):
         """
         return DataLoader(
             dataset=self.val_dataset,
-            batch_size=self.batch_size,
+            batch_size=self.config.batch_size,
             shuffle=False,
-            num_workers=self.num_workers,
+            num_workers=self.config.num_workers,
             persistent_workers=True,
             prefetch_factor=1,
         )

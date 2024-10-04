@@ -42,7 +42,7 @@ def state_bd() -> State:
     deter = torch.rand(BATCH_SIZE, DETERMINISTIC_SIZE)
     mean = torch.rand(BATCH_SIZE, STOCHASTIC_SIZE)
     std = torch.rand(BATCH_SIZE, STOCHASTIC_SIZE)
-    distribution = Normal(mean, std)
+    distribution = Normal(mean, std)  # type: ignore[no-untyped-call]
     return State(deter=deter, distribution=distribution)
 
 
