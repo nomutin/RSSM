@@ -24,7 +24,7 @@ def state() -> State:
     )
     mean = torch.rand(BATCH_SIZE, SEQ_LEN, STOCHASTIC_SIZE, requires_grad=True)
     std = torch.rand(BATCH_SIZE, SEQ_LEN, STOCHASTIC_SIZE, requires_grad=True)
-    distribution = Normal(mean, std)
+    distribution = Normal(mean, std)  # type: ignore[no-untyped-call]
     return State(deter=deter, distribution=distribution)
 
 

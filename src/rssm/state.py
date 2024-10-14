@@ -7,33 +7,44 @@ from distribution_extension import Distribution
 from distribution_extension.utils import cat_distribution, stack_distribution
 from torch import Tensor
 
-Slice = slice | int | tuple[slice | int, ...]
-
 
 class State:
     """Abstract class for RSSM State."""
 
-    def __init__(
-        self,
-        deter: Tensor,
-        distribution: Distribution,
-        stoch: Tensor | None = None,
-    ) -> None:
-        """Set parameters."""
+    def __init__(self, deter: Tensor, distribution: Distribution, stoch: Tensor | None = None) -> None:
         self.deter = deter
         self.distribution = distribution
         self.stoch = distribution.rsample() if stoch is None else stoch
         self.feature = torch.cat([self.deter, self.stoch], dim=-1)
 
     def __iter__(self) -> Generator["State", None, None]:
-        """Enable iteration over the batch dimension."""
+        """
+        Enable iteration over the batch dimension.
+
+        Yields
+        ------
+        Generator[State, None, None]
+            State for each batch.
+        """
         i = 0
         while i < self.deter.shape[0]:
             yield self[i]
             i += 1
 
-    def __getitem__(self, loc: Slice) -> "State":
-        """Slice the state."""
+    def __getitem__(self, loc: slice | int | tuple[slice | int, ...]) -> "State":
+        """
+        Slice the state.
+
+        Parameters
+        ----------
+        loc : slice | int | tuple[slice | int, ...]
+            Indexing.
+
+        Returns
+        -------
+        State
+            Sliced state.
+        """
         return type(self)(
             deter=self.deter[loc],
             stoch=self.stoch[loc],
@@ -41,7 +52,20 @@ class State:
         )
 
     def to(self, device: torch.device) -> "State":
-        """Move the state to the given device."""
+        """
+        Move the state to the given device.
+
+        Parameters
+        ----------
+        device : torch.device
+            Device to move the state.
+
+        Returns
+        -------
+        State
+            State on the given device.
+
+        """
         return type(self)(
             deter=self.deter.to(device),
             stoch=self.stoch.to(device),
@@ -49,7 +73,15 @@ class State:
         )
 
     def detach(self) -> "State":
-        """Detach the state."""
+        """
+        Detach the state.
+
+        Returns
+        -------
+        State
+            Detached state.
+
+        """
         return type(self)(
             deter=self.deter.detach(),
             stoch=self.stoch.detach(),
@@ -57,7 +89,14 @@ class State:
         )
 
     def clone(self) -> "State":
-        """Clone the state."""
+        """
+        Clone the state.
+
+        Returns
+        -------
+        State
+            Cloned state.
+        """
         return type(self)(
             deter=self.deter.clone(),
             stoch=self.stoch.clone(),
@@ -65,7 +104,19 @@ class State:
         )
 
     def squeeze(self, dim: int) -> "State":
-        """Squeeze the state."""
+        """
+        Squeeze the state.
+
+        Parameters
+        ----------
+        dim : int
+            Dimension to squeeze.
+
+        Returns
+        -------
+        State
+            Squeezed state.
+        """
         return type(self)(
             deter=self.deter.squeeze(dim),
             stoch=self.stoch.squeeze(dim),
@@ -73,7 +124,19 @@ class State:
         )
 
     def unsqueeze(self, dim: int) -> "State":
-        """Unsqueeze the state."""
+        """
+        Unsqueeze the state.
+
+        Parameters
+        ----------
+        dim : int
+            Dimension to unsqueeze.
+
+        Returns
+        -------
+        State
+            Unsqueezed state.
+        """
         return type(self)(
             deter=self.deter.unsqueeze(dim),
             stoch=self.stoch.unsqueeze(dim),
@@ -82,24 +145,44 @@ class State:
 
 
 def stack_states(states: list[State], dim: int) -> State:
-    """Stack states along the given dimension."""
+    """
+    Stack states along the given dimension.
+
+    Parameters
+    ----------
+    states : list[State]
+        List of states.
+    dim : int
+        Dimension to stack.
+
+    Returns
+    -------
+    State
+        Stacked states.
+    """
     deter = torch.stack([s.deter for s in states], dim=dim)
     stoch = torch.stack([s.stoch for s in states], dim=dim)
     distribution = stack_distribution([s.distribution for s in states], dim)
-    return State(
-        deter=deter,
-        stoch=stoch,
-        distribution=distribution,
-    )
+    return State(deter=deter, stoch=stoch, distribution=distribution)
 
 
 def cat_states(states: list[State], dim: int) -> State:
-    """Concatenate states along the given dimension."""
+    """
+    Concatenate states along the given dimension.
+
+    Parameters
+    ----------
+    states : list[State]
+        List of states.
+    dim : int
+        Dimension to concatenate.
+
+    Returns
+    -------
+    State
+        Concatenated states.
+    """
     deter = torch.cat([s.deter for s in states], dim=dim)
     stoch = torch.cat([s.stoch for s in states], dim=dim)
     distribution = cat_distribution([s.distribution for s in states], dim)
-    return State(
-        deter=deter,
-        stoch=stoch,
-        distribution=distribution,
-    )
+    return State(deter=deter, stoch=stoch, distribution=distribution)

@@ -180,12 +180,12 @@ def test__training_step(
 ) -> None:
     """Test `training_step` method."""
     batch = (action_bld, observation_bld, action_bld, observation_bld)
-    loss = continuous_rssm.training_step(batch)
+    loss = continuous_rssm.training_step(batch, 0)
     assert "loss" in loss
     assert "kl" in loss
     assert "recon" in loss
 
-    loss = discrete_rssm.training_step(batch)
+    loss = discrete_rssm.training_step(batch, 0)
     assert "loss" in loss
     assert "kl" in loss
     assert "recon" in loss

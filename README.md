@@ -1,6 +1,7 @@
 # RSSM
 
 ![python](https://img.shields.io/badge/python-3.10-blue)
+[![uv](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/uv/main/assets/badge/v0.json)](https://github.com/astral-sh/uv)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/charliermarsh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 [![CI](https://github.com/nomutin/RSSM/actions/workflows/ci.yaml/badge.svg)](https://github.com/nomutin/RSSM/actions/workflows/ci.yaml)
 [![codecov](https://codecov.io/gh/nomutin/RSSM/graph/badge.svg?token=YMR2H87R5C)](https://codecov.io/gh/nomutin/RSSM)

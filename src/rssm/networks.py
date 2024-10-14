@@ -24,6 +24,19 @@ class RepresentationV1(nn.Module):
     ```
     stochastic = MLP(Transition.deterministic, obs_embed)
     ```
+
+    Parameters
+    ----------
+    deterministic_size : int
+        Size of deterministic state.
+    stochastic_size : int
+        Size of stochastic state.
+    hidden_size : int
+        Size of hidden layer.
+    obs_embed_size : int
+        Size of observation embedding.
+    activation_name : str
+        Name of activation function.
     """
 
     def __init__(
@@ -35,7 +48,6 @@ class RepresentationV1(nn.Module):
         obs_embed_size: int,
         activation_name: str,
     ) -> None:
-        """Set components."""
         super().__init__()
 
         self.rnn_to_post_projector = MLP(
@@ -145,6 +157,21 @@ class RepresentationV2(nn.Module):
     ```
     stochastic = MLP(Transition.deterministic, obs_embed)
     ```
+
+    Parameters
+    ----------
+    deterministic_size : int
+        Size of deterministic state.
+    hidden_size : int
+        Size of hidden layer.
+    obs_embed_size : int
+        Size of observation embedding.
+    class_size : int
+        Size of class.
+    category_size : int
+        Size of category.
+    activation_name : str
+        Name of activation function.
     """
 
     def __init__(
@@ -157,7 +184,6 @@ class RepresentationV2(nn.Module):
         category_size: int,
         activation_name: str,
     ) -> None:
-        """Set components."""
         super().__init__()
 
         self.rnn_to_post_projector = MLP(
@@ -204,6 +230,21 @@ class TransitionV2(nn.Module):
     deterministic = GRU(prev_action, prev_deterministic, prev_stochastic)
     stochastic = MLP(deterministic)
     ```
+
+    Parameters
+    ----------
+    deterministic_size : int
+        Size of deterministic state.
+    hidden_size : int
+        Size of hidden layer.
+    action_size : int
+        Size of action.
+    class_size : int
+        Size of class.
+    category_size : int
+        Size of category.
+    activation_name : str
+        Name of activation function.
     """
 
     def __init__(
@@ -216,7 +257,6 @@ class TransitionV2(nn.Module):
         category_size: int,
         activation_name: str,
     ) -> None:
-        """Set components."""
         super().__init__()
 
         self.rnn_cell = nn.GRUCell(

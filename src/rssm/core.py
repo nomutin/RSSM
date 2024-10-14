@@ -1,7 +1,5 @@
 """Reccurent State Space Model (RSSM)."""
 
-from typing import TypeAlias
-
 from distribution_extension import kl_divergence
 from lightning import LightningModule
 from torch import Tensor, nn
@@ -9,9 +7,6 @@ from torch import Tensor, nn
 from rssm.networks import Representation, Transition
 from rssm.objective import likelihood
 from rssm.state import State, stack_states
-
-DataGroup: TypeAlias = tuple[Tensor, Tensor, Tensor, Tensor]
-LossDict: TypeAlias = dict[str, Tensor]
 
 
 class RSSM(LightningModule):
@@ -36,7 +31,7 @@ class RSSM(LightningModule):
     decoder : nn.Module
         Observation decoder.
         I/O: [*B, obs_embed_size] -> [*B, C, H, W].
-    init_proj : DictConfig of nn.Module
+    init_proj : nn.Module
         Initial projection layer.
         I/O: [*B, obs_embed_size] -> [*B, deterministic_size].
     kl_coeff : float
@@ -67,7 +62,19 @@ class RSSM(LightningModule):
         self.use_kl_balancing = use_kl_balancing
 
     def initial_state(self, observation: Tensor) -> State:
-        """Generate initial state as zero matrix."""
+        """
+        Generate initial state as zero matrix.
+
+        Parameters
+        ----------
+        observation : Tensor
+            4D Tensor [batch_size, channel, height, width].
+
+        Returns
+        -------
+        State
+            Initial state.
+        """
         obs_embed = self.encoder(observation)
         deter = self.init_proj(obs_embed)
         stoch = self.transition.rnn_to_prior_projector(deter)
@@ -135,21 +142,67 @@ class RSSM(LightningModule):
             priors.append(prev_state)
         return stack_states(priors, dim=1)
 
-    def training_step(self, batch: DataGroup, **_: str) -> LossDict:
-        """Rollout training step."""
+    def training_step(self, batch: tuple[Tensor, ...], _: int) -> dict[str, Tensor]:
+        """
+        Rollout training step.
+
+        Parameters
+        ----------
+        batch : tuple[Tensor, ...]
+            Batch data.
+
+        Returns
+        -------
+        dict[str, Tensor]
+            Losses.
+        """
         loss_dict = self.shared_step(batch)
         self.log_dict(loss_dict, prog_bar=True, sync_dist=True)
         return loss_dict
 
-    def validation_step(self, batch: DataGroup, _: int) -> LossDict:
-        """Rollout validation step."""
+    def validation_step(self, batch: tuple[Tensor, ...], _batch_index: int) -> dict[str, Tensor]:
+        """
+        Rollout validation step.
+
+        Parameters
+        ----------
+        batch : tuple[Tensor, ...]
+            Batch data.
+        _batch_index : int
+            Batch index.
+
+        Returns
+        -------
+        dict[str, Tensor]
+            Losses. Each loss is prefixed with "val_".
+        """
         loss_dict = self.shared_step(batch)
         loss_dict = {"val_" + k: v for k, v in loss_dict.items()}
         self.log_dict(loss_dict, prog_bar=True, sync_dist=True)
         return loss_dict
 
-    def shared_step(self, batch: DataGroup) -> LossDict:
-        """Rollout common step for training and validation."""
+    def shared_step(self, batch: tuple[Tensor, ...]) -> dict[str, Tensor]:
+        """
+        Rollout common step for training and validation.
+
+        Parameters
+        ----------
+        batch : tuple[Tensor, ...]
+            Batch data.
+            action_input : Tensor
+                3D Tensor [batch_size, seq_len, action_size].
+            observation_input : Tensor
+                5D Tensor [batch_size, seq_len, channel, height, width].
+            action_target : Tensor
+                3D Tensor [batch_size, seq_len, action_size].
+            observation_target : Tensor
+                5D Tensor [batch_size, seq_len, channel, height, width].
+
+        Returns
+        -------
+        dict[str, Tensor]
+            Losses.
+        """
         action_input, observation_input, _, observation_target = batch
         posterior, prior = self.rollout_representation(
             actions=action_input,

@@ -5,67 +5,75 @@ model:
   class_path: rssm.RSSM
   init_args:
     representation:
-      class_path: rssm.RepresentationV1
-      init_args:
-        deterministic_size: 200
-        stochastic_size: 30
-        obs_embed_size: 256
-        hidden_size: 200
-        activation_name: ELU
+      _target_: rssm.RepresentationV2
+      deterministic_size: 400
+      class_size: 16
+      category_size: 16
+      hidden_size: 400
+      obs_embed_size: 256
+      activation_name: ELU
     transition:
-      class_path: rssm.TransitionV1
-      init_args:
-        deterministic_size: 200
-        stochastic_size: 30
-        hidden_size: 64
-        action_size: 3
-        activation_name: ELU
+      _target_: rssm.TransitionV2
+      deterministic_size: 400
+      class_size: 16
+      category_size: 16
+      hidden_size: 400
+      action_size: 3
+      activation_name: ELU
     encoder:
-      class_path: cnn.Encoder
-      init_args:
-        config:
-          linear_sizes: [256,]
-          activation_name: ELU
-          out_activation_name: Identity
-          channels: [8, 16, 32]
-          kernel_sizes: [3, 3, 3]
-          strides: [2, 2, 2]
-          paddings: [1, 1, 1]
-          observation_shape: [5, 64, 64]
-          coord_conv: true
+      _target_: cnn.Encoder
+      config:
+        _target_: cnn.EncoderConfig
+        linear_sizes: [256,]
+        activation_name: ELU
+        out_activation_name: Identity
+        channels: [16, 32, 64]
+        kernel_sizes: [3, 3, 3]
+        strides: [2, 2, 2]
+        paddings: [1, 1, 1]
+        observation_shape: [5, 64, 64]
+        coord_conv: true
     decoder:
-      class_path: cnn.ResNetDecoder
-      init_args:
-        config:
-          linear_sizes: [230, 256]
-          activation_name: ELU
-          out_activation_name: Sigmoid
-          channels: [32, 16, 8, 3]
-          kernel_sizes: [4, 4, 4]
-          strides: [2, 2, 2]
-          paddings: [1, 1, 1]
-          output_paddings: [0, 0, 0]
-          observation_shape: [3, 64, 64]
-          depth: 4
+      _target_: cnn.ResNetDecoder
+      config:
+        _target_: cnn.DecoderConfig
+        linear_sizes: [656, ]
+        activation_name: ELU
+        out_activation_name: Sigmoid
+        channels: [64, 32, 16, 3]
+        kernel_sizes: [4, 4, 4]
+        strides: [2, 2, 2]
+        paddings: [1, 1, 1]
+        output_paddings: [0, 0, 0]
+        observation_shape: [3, 64, 64]
+        depth: 12
     init_proj:
-      class_path: torchrl.modules.MLP
-      init_args:
-        in_features: 256
-        out_features: 200
-        num_cells: 200
-        depth: 1
+      _target_: torchrl.modules.MLP
+      in_features: 256
+      out_features: 400
+      num_cells: 400
+      depth: 1
     kl_coeff: 0.1
-    use_kl_balancing: false
+    use_kl_balancing: true
 
 optimizer:
   class_path: torch.optim.AdamW
   init_args:
     lr: 0.001
 
+lr_scheduler:
+  class_path: lightning.pytorch.cli.ReduceLROnPlateau
+  init_args:
+    monitor: val_loss
+    mode: min
+    factor: 0.5
+    patience: 50
+    verbose: True
+
 trainer:
   accelerator: gpu
-  max_epochs: -1
-  devices: [2]
+  # devices: [1]
+  max_epochs: 2000
   gradient_clip_val: 10
   deterministic: true
   precision: 16-mixed
@@ -83,7 +91,7 @@ trainer:
       class_path: EarlyStopping
       init_args:
         monitor: val_loss
-        patience: 50
+        patience: 200
         mode: min
         verbose: True
     - 
@@ -168,10 +176,3 @@ data:
               contrast: 0.1
               saturation: 0.1
               hue: 0.1
-          - class_path: kornia.augmentation.RandomBoxBlur
-            init_args:
-              p: 0.3
-              kernel_size: [3, 3]
-          - class_path: kornia.augmentation.RandomErasing
-            init_args:
-              p: 0.3
