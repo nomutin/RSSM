@@ -5,7 +5,6 @@ description = "Reccurent State-Space Model"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
-    "cnn",
     "lightning[extra]>=2.4.0",
     "torchrl>=0.5.0",
 ]
@@ -19,6 +18,7 @@ dev = [
     "ruff>=0.6.8",
 ]
 train = [
+    "cnn",
     "distribution-extension",
     "gdown>=5.2.0",
     "torchvision>=0.19.1",
