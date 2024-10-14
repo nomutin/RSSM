@@ -176,10 +176,3 @@ data:
               contrast: 0.1
               saturation: 0.1
               hue: 0.1
-          # - class_path: kornia.augmentation.RandomBoxBlur
-          #   init_args:
-          #     p: 0.3
-          #     kernel_size: [3, 3]
-          # - class_path: kornia.augmentation.RandomErasing
-          #   init_args:
-          #     p: 0.3

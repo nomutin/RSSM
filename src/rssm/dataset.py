@@ -171,7 +171,7 @@ class EpisodeDataModule(LightningDataModule):
     def setup(self, stage: str = "fit") -> None:
         """Create datasets."""
         action_path_list = sorted(self.config.processed_data_dir.glob("act*"))
-        observation_path_list = sorted(self.config.processed_data_dir.glob("qua*"))
+        observation_path_list = sorted(self.config.processed_data_dir.glob("obs*"))
 
         train_action_list, val_action_list = split_path_list(action_path_list, 0.8)
         train_observation_list, val_observation_list = split_path_list(observation_path_list, 0.8)
@@ -179,14 +179,14 @@ class EpisodeDataModule(LightningDataModule):
         if stage == "fit":
             self.train_dataset = StackDataset(
                 EpisodeDataset(train_action_list, self.config.action_input_transform),
-                EpisodeDataset(train_action_list, self.config.action_target_transform),
                 EpisodeDataset(train_observation_list, self.config.observation_input_transform),
+                EpisodeDataset(train_action_list, self.config.action_target_transform),
                 EpisodeDataset(train_observation_list, self.config.observation_target_transform),
             )
         self.val_dataset = StackDataset(
             EpisodeDataset(val_action_list, self.config.action_input_transform),
-            EpisodeDataset(val_action_list, self.config.action_target_transform),
             EpisodeDataset(val_observation_list, self.config.observation_input_transform),
+            EpisodeDataset(val_action_list, self.config.action_target_transform),
             EpisodeDataset(val_observation_list, self.config.observation_target_transform),
         )
 

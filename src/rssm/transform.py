@@ -11,13 +11,13 @@ class NormalizeAction:
 
     Parameters
     ----------
-    max_array : list[int]
+    max_array : list[float]
         Maximum values for each dimension.
-    min_array : list[int]
+    min_array : list[float]
         Minimum values for each dimension.
     """
 
-    def __init__(self, max_array: list[int], min_array: list[int]) -> None:
+    def __init__(self, max_array: list[float], min_array: list[float]) -> None:
         self.max_array = Tensor(max_array)
         self.min_array = Tensor(min_array)
 

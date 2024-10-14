@@ -26,7 +26,7 @@ class LogRSSMOutput(Callback):
 
     def on_validation_epoch_end(self, trainer: Trainer, pl_module: LightningModule) -> None:
         """Log RSSM imagination outputs."""
-        if trainer.current_epoch % self.every_n_epochs != 0:
+        if trainer.current_epoch % self.every_n_epochs != 0 or trainer.current_epoch == 0:
             return
         if not isinstance(logger := trainer.logger, WandbLogger):
             return
@@ -57,4 +57,4 @@ class LogRSSMOutput(Callback):
 
     def log_video(self, batch_video: Tensor, key: str, logger: WandbLogger) -> None:
         """Log video to wandb."""
-        logger.log_video(key=key, videos=list(batch_video.cpu()), fps=[self.fps] * len(self.indices))
+        logger.log_video(key=key, videos=list(batch_video.cpu().mul(255)), fps=[self.fps] * len(self.indices))
