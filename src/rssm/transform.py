@@ -137,3 +137,34 @@ class RemoveTail:
             Data with the last element removed. Shape: [seq_len - 1, *].
         """
         return data[:-1]
+
+
+class GaussianNoise:
+    """
+    Add random Gaussian noise to the data.
+
+    Parameters
+    ----------
+    std : float
+        Standard deviation of the noise.
+    """
+
+    def __init__(self, std: float = 0.05) -> None:
+        self.std = std
+
+    def __call__(self, data: Tensor) -> Tensor:
+        """
+        Add random Gaussian noise to the data.
+
+        Parameters
+        ----------
+        data : Tensor
+            Data to add noise. Shape: [*].
+
+        Returns
+        -------
+        Tensor
+            Data with noise added. Shape: [*].
+
+        """
+        return data + torch.randn_like(data) * self.std

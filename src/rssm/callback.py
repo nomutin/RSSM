@@ -1,5 +1,6 @@
 """Callbacks for RSSM."""
 
+import torch
 from lightning import Callback, LightningModule, Trainer
 from lightning.pytorch.loggers import WandbLogger
 from torch import Tensor
@@ -57,4 +58,5 @@ class LogRSSMOutput(Callback):
 
     def log_video(self, batch_video: Tensor, key: str, logger: WandbLogger) -> None:
         """Log video to wandb."""
-        logger.log_video(key=key, videos=list(batch_video.cpu().mul(255)), fps=[self.fps] * len(self.indices))
+        video_list = list(batch_video.cpu().mul(255).to(torch.uint8))
+        logger.log_video(key=key, videos=video_list, fps=[self.fps] * len(self.indices))
