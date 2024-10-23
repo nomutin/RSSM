@@ -1,0 +1,175 @@
+---
+seed_everything: 42
+
+model:
+  class_path: rssm.RSSM
+  init_args:
+    representation:
+      class_path: rssm.RepresentationV1
+      init_args:
+        deterministic_size: 200
+        stochastic_size: 30
+        hidden_size: 200
+        obs_embed_size: 256
+        activation_name: ELU
+    transition:
+      class_path: rssm.TransitionV1
+      init_args:
+        deterministic_size: 200
+        stochastic_size: 30
+        hidden_size: 200
+        action_size: 6
+        activation_name: ELU
+    encoder:
+      class_path: cnn.Encoder
+      init_args:
+        config:
+          linear_sizes: [256,]
+          activation_name: ELU
+          out_activation_name: Identity
+          channels: [16, 32, 64]
+          kernel_sizes: [3, 3, 3]
+          strides: [2, 2, 2]
+          paddings: [1, 1, 1]
+          num_residual_blocks: 3
+          residual_intermediate_size: 128
+          residual_output_size: 64
+          coord_conv: true
+    decoder:
+      class_path: cnn.Decoder
+      init_args:
+        config:
+          linear_sizes: [230, 9216]
+          conv_in_shape: [64, 9, 16]
+          activation_name: ELU
+          out_activation_name: Sigmoid
+          channels: [32, 16, 3]
+          kernel_sizes: [4, 4, 4]
+          strides: [2, 2, 2]
+          paddings: [1, 1, 1]
+          output_paddings: [0, 0, 0]
+          num_residual_blocks: 3
+          residual_intermediate_size: 128
+          residual_input_size: 64
+    init_proj:
+      class_path: torchrl.modules.MLP
+      init_args:
+        in_features: 256
+        out_features: 200
+        num_cells: 200
+        depth: 1
+    kl_coeff: 1
+    use_kl_balancing: false
+
+optimizer:
+  class_path: torch.optim.AdamW
+  init_args:
+    lr: 0.001
+
+lr_scheduler:
+  class_path: lightning.pytorch.cli.ReduceLROnPlateau
+  init_args:
+    monitor: val_loss
+    mode: min
+    factor: 0.5
+    patience: 50
+    verbose: True
+
+trainer:
+  accelerator: gpu
+  max_epochs: 2000
+  gradient_clip_val: 10
+  deterministic: true
+  precision: 16-mixed
+  log_every_n_steps: 1
+
+  logger:
+    class_path: WandbLogger
+    init_args:
+      log_model: true
+      project: rope_koch_rssm
+      save_dir: .venv
+
+  callbacks:
+    -
+      class_path: LearningRateMonitor
+    -
+      class_path: EarlyStopping
+      init_args:
+        monitor: val_loss
+        patience: 200
+        mode: min
+        verbose: True
+    - 
+      class_path: ModelCheckpoint
+      init_args:
+        monitor: val_loss
+        mode: min
+        save_top_k: 1
+    -
+      class_path: rssm.callback.LogRSSMOutput
+      init_args:
+        every_n_epochs: 30
+        indices: [0, 1, 2, 3, 4, 5, 6, 7]
+        query_length: 10
+        fps: 20
+
+data:
+  class_path: rssm.dataset.EpisodeDataModule
+  init_args:
+    config:
+      data_name: rope_koch
+      batch_size: 8
+      num_workers: 4
+      gdrive_url: https://drive.google.com/file/d/1UF7dqUwfHv2uM_nRHHUXwme4DXZ3jmS3/view?usp=share_link
+      action_preprocess:
+        class_path: rssm.transform.NormalizeAction
+        init_args:
+          max_array: [82.8, 134.3, 145.2, 109.4, 253.4, 41.9]
+          min_array: [-74.3, 17.8, 21.1, -53.6, -259.1, -9.8]
+      observation_preprocess:
+        class_path: torchvision.transforms.Compose
+        init_args:
+          transforms:
+            - class_path: einops.layers.torch.Rearrange
+              init_args:
+                pattern: B H W C -> B C H W
+            - class_path: torchvision.transforms.Normalize
+              init_args:
+                mean: 0.0
+                std: 255.0
+
+      action_input_transform:
+        class_path: torchvision.transforms.Compose
+        init_args:
+          transforms:
+            - class_path: rssm.transform.RandomWindow
+              init_args:
+                window_size: 64
+            - class_path: rssm.transform.RemoveTail
+            - class_path: rssm.transform.GaussianNoise
+      action_target_transform:
+        class_path: torchvision.transforms.Compose
+        init_args:
+          transforms:
+            - class_path: rssm.transform.RandomWindow
+              init_args:
+                window_size: 64
+            - class_path: rssm.transform.RemoveHead
+      observation_input_transform:
+        class_path: torchvision.transforms.Compose
+        init_args:
+          transforms:
+            - class_path: rssm.transform.RandomWindow
+              init_args:
+                window_size: 64
+            - class_path: rssm.transform.RemoveTail
+            - class_path: rssm.transform.GaussianNoise
+      observation_target_transform:
+        class_path: torchvision.transforms.Compose
+        init_args:
+          transforms:
+            - class_path: rssm.transform.RandomWindow
+              init_args:
+                window_size: 64
+            - class_path: rssm.transform.RemoveHead

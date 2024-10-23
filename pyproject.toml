@@ -1,48 +1,47 @@
 [project]
 name = "rssm"
-version = "0.1.4"
+version = "0.1.5"
 description = "Reccurent State-Space Model"
-dependencies = [
-    "lightning>=2.2.1",
-    "torchrl>=0.3.1",
-    "distribution-extension @ git+https://github.com/nomutin/distribution-extension.git",
-]
 readme = "README.md"
-requires-python = ">= 3.8"
+requires-python = ">=3.10"
+dependencies = [
+    "lightning[extra]>=2.4.0",
+    "torchrl>=0.5.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "mypy>=1.11.2",
+    "poethepoet>=0.29.0",
+    "pydoclint>=0.5.9",
+    "pytest-cov>=5.0.0",
+    "ruff>=0.6.8",
+]
+train = [
+    "cnn",
+    "distribution-extension",
+    "gdown>=5.2.0",
+    "torchvision>=0.19.1",
+    "wandb[media]>=0.18.3",
+]
 
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
-[tool.rye]
-managed = true
-dev-dependencies = [
-    "mypy>=1.9.0",
-    "pytest-cov>=5.0.0",
-    "ruff>=0.5.1",
-]
+[tool.uv]
+package = true
 
-[tool.hatch.metadata]
-allow-direct-references = true
-
-[tool.hatch.build.targets.wheel]
-packages = ["src/rssm"]
-
-[tool.pytest.ini_options]
-filterwarnings = [
-    "ignore::UserWarning",
-    "ignore::DeprecationWarning",
-]
-
-[tool.rye.scripts]
-cov = "pytest -ra --cov=src --cov-report=term --cov-report=xml"
+[tool.uv.sources]
+distribution-extension = { git = "https://github.com/nomutin/distribution-extension" }
+cnn = { git = "https://github.com/nomutin/CNN.git" }
 
 [tool.mypy]
 python_version = "3.10"
 ignore_missing_imports = true
 
 [tool.ruff]
-line-length = 80
+line-length = 120
 target-version = "py310"
 
 [tool.ruff.lint]
@@ -64,9 +63,22 @@ known-first-party = ["rssm"]
 "src/rssm/core.py" = ["PLR0913"]
 "src/rssm/networks.py" = ["PLR0913"]
 "example/dataset.py" = ["PLR0913"]
-"example/callback.py" = ["SLF001"]
-"tests/*.py" = ["S101"]
+"tests/*.py" = ["S101", "DOC201"]
 "tests/test__core.py" = ["PLR6301", "PLR2004"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "numpy"
+
+[tool.pydoclint]
+style = 'numpy'
+exclude = '\.git|\.ruff_cache|\.mypy_cache|\.venv'
+
+[tool.poe.tasks]
+lint-ruff = "ruff check --fix ."
+lint-mypy = "mypy --strict ."
+lint-pydoclint = "pydoclint ."
+lint = ["lint-ruff", "lint-pydoclint", "lint-mypy",]
+test = "pytest . --doctest-modules -ra --cov=src --cov-report=term --cov-report=xml"
+
+[tool.poe.tasks.train]
+script = "lightning.pytorch.cli:LightningCLI(save_config_kwargs={'overwrite': True})"
